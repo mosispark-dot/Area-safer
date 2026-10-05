@@ -28,7 +28,7 @@ class BillingHelper private constructor(private val context: Context) : Purchase
 
     private var billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(this)
-        .enablePendingPurchases()
+        .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
         .build()
 
     private val _isPremium = MutableStateFlow(false)
@@ -68,10 +68,10 @@ class BillingHelper private constructor(private val context: Context) : Purchase
             )
             .build()
 
-        billingClient.queryProductDetailsAsync(inappParams) { billingResult, inappList ->
+        billingClient.queryProductDetailsAsync(inappParams) { billingResult, result ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 val currentList = _productDetailsList.value.toMutableList()
-                currentList.addAll(inappList)
+                currentList.addAll(result.productDetailsList)
                 _productDetailsList.value = currentList.distinctBy { it.productId }
             }
         }
@@ -96,10 +96,10 @@ class BillingHelper private constructor(private val context: Context) : Purchase
             )
             .build()
 
-        billingClient.queryProductDetailsAsync(subsParams) { billingResult, subsList ->
+        billingClient.queryProductDetailsAsync(subsParams) { billingResult, result ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 val currentList = _productDetailsList.value.toMutableList()
-                currentList.addAll(subsList)
+                currentList.addAll(result.productDetailsList)
                 _productDetailsList.value = currentList.distinctBy { it.productId }
             }
         }

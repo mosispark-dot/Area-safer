@@ -16,4 +16,7 @@ local.properties
 *.py
 Search.txt
 fix_*.kt
+*.jks
+/app/release
+
 
