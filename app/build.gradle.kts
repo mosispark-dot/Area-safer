@@ -14,10 +14,16 @@ android {
         applicationId = "com.arfa_zuha.phonecleaner.ms321"
         minSdk = 24
         targetSdk = 37
-        versionCode = 6
-        versionName = "1.2"
+        versionCode = 8
+        versionName = "1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     buildTypes {
