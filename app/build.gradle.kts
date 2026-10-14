@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -13,8 +14,8 @@ android {
         applicationId = "com.arfa_zuha.phonecleaner.ms321"
         minSdk = 24
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 6
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,7 +57,11 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // AdMob & Billing
-    implementation("com.google.android.gms:play-services-ads:23.0.0")
+    // AdMob Next-Gen SDK & Billing
+    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.5.0")
     implementation("com.android.billingclient:billing-ktx:8.0.0")
+
+    // Firebase Google Analytics
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
 }

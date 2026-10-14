@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "126406061274",
+    "project_id": "storage-saver-6e424",
+    "storage_bucket": "storage-saver-6e424.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:126406061274:android:f990333768d1c87e7a09e3",
+        "android_client_info": {
+          "package_name": "com.arfa_zuha.phonecleaner.ms321"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAoM1-yh7oJVklsXdyDePDv9THc7mGxjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -109,6 +109,11 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    // Automatic Screen View Tracking in Google Analytics
+                    LaunchedEffect(currentScreen) {
+                        com.arfa_zuha.phonecleaner.ms321.analytics.AnalyticsHelper.logScreenView(currentScreen.route)
+                    }
+
                     val items = listOf(
                         Screen.Dashboard,
                         Screen.Battery,
@@ -173,8 +178,16 @@ class MainActivity : ComponentActivity() {
                                         currentScreen = Screen.Apps
                                     }
                                 },
-                                onNavigateToCompression = { currentScreen = Screen.Compression },
-                                onNavigateToBattery = { currentScreen = Screen.Battery },
+                                onNavigateToCompression = {
+                                    com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper.showAd(this@MainActivity) {
+                                        currentScreen = Screen.Compression
+                                    }
+                                },
+                                onNavigateToBattery = {
+                                    com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper.showAd(this@MainActivity) {
+                                        currentScreen = Screen.Battery
+                                    }
+                                },
                                 onNavigateToDuplicates = {
                                     com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper.showAd(this@MainActivity) {
                                         currentScreen = Screen.Duplicates

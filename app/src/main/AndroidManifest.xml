@@ -38,6 +38,8 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-8393457688147659~6995482245"/>
+
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

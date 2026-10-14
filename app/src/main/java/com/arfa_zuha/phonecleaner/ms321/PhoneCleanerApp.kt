@@ -4,8 +4,9 @@ import android.app.Application
 import com.arfa_zuha.phonecleaner.ms321.ads.AppOpenAdManager
 import com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper
 import com.arfa_zuha.phonecleaner.ms321.billing.BillingHelper
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.MobileAds
+import com.google.android.libraries.ads.mobile.sdk.MobileAds
+import com.google.android.libraries.ads.mobile.sdk.common.RequestConfiguration
+import com.google.android.libraries.ads.mobile.sdk.initialization.InitializationConfig
 
 class PhoneCleanerApp : Application() {
     
@@ -15,21 +16,27 @@ class PhoneCleanerApp : Application() {
     override fun onCreate() {
         super.onCreate()
         
+        // Initialize Google Analytics (Firebase)
+        com.arfa_zuha.phonecleaner.ms321.analytics.AnalyticsHelper.init(this)
+
         // Initialize Google Play Billing to start querying purchases immediately
         BillingHelper.getInstance(this)
 
         // Initialize App Open Ad Manager IMMEDIATELY so it's never uninitialized
         appOpenAdManager = AppOpenAdManager(this)
         
-        // Initialize AdMob Test Devices Configuration
-        val requestConfiguration = MobileAds.getRequestConfiguration()
-            .toBuilder()
-            .setTestDeviceIds(listOf(AdRequest.DEVICE_ID_EMULATOR))
+        // Next-Gen GMA SDK Configuration
+        val requestConfig = RequestConfiguration.Builder()
+            .setTestDeviceIds(listOf("EMULATOR"))
             .build()
-        MobileAds.setRequestConfiguration(requestConfiguration)
+        MobileAds.setRequestConfiguration(requestConfig)
 
-        // Initialize AdMob and pre-load ads inside completion callback
-        MobileAds.initialize(this) {
+        val initConfig = InitializationConfig.Builder("ca-app-pub-8393457688147659~6995482245")
+            .setRequestConfiguration(requestConfig)
+            .build()
+
+        // Initialize Next-Gen Mobile Ads SDK
+        MobileAds.initialize(this, initConfig) {
             appOpenAdManager.loadAd(this)
             InterstitialAdHelper.loadAd(this)
         }

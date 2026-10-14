@@ -6,15 +6,17 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.arfa_zuha.phonecleaner.ms321.billing.BillingHelper
-import com.google.android.gms.ads.AdError
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.FullScreenContentCallback
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd
+import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import java.util.Date
 
 class AppOpenAdManager(private val application: Application) : Application.ActivityLifecycleCallbacks {
@@ -23,15 +25,21 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
     private var isLoadingAd = false
     private var loadTime: Long = 0
     private var currentActivity: Activity? = null
+    private var isColdStart = true
 
-    // Sample Test Ad ID for App Open Ads
     private val AD_UNIT_ID = "ca-app-pub-8393457688147659/4369318908" // Real App Open Ad ID
+
+    // Queue of waiters to prevent duplicate ad requests
+    private val pendingWaiters = mutableListOf<(AppOpenAd?) -> Unit>()
     
     init {
         application.registerActivityLifecycleCallbacks(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
-                showAdIfAvailable()
+                // Ignore initial ON_START because SplashScreen handles cold start
+                if (!isColdStart) {
+                    showAdIfAvailable()
+                }
             }
         })
     }
@@ -42,25 +50,39 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
         }
 
         isLoadingAd = true
-        val request = AdRequest.Builder().build()
+        Log.d("AdMobAppOpen", "Requesting App Open Ad from Next-Gen SDK...")
+        val request = AdRequest.Builder(AD_UNIT_ID).build()
         AppOpenAd.load(
-            context,
-            AD_UNIT_ID,
             request,
-            object : AppOpenAd.AppOpenAdLoadCallback() {
+            object : AdLoadCallback<AppOpenAd> {
                 override fun onAdLoaded(ad: AppOpenAd) {
+                    Log.d("AdMobAppOpen", "App Open Ad loaded successfully!")
                     appOpenAd = ad
                     isLoadingAd = false
                     loadTime = Date().time
+                    notifyWaiters(ad)
                 }
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    Log.e("AdMobAppOpen", "App Open Ad failed to load: code=${adError.code}, message=${adError.message}")
                     isLoadingAd = false
+                    notifyWaiters(null)
+                    // Retry with 15s delay, avoiding aggressive looping
                     Handler(Looper.getMainLooper()).postDelayed({
-                        loadAd(context)
-                    }, 3000L)
+                        loadAd(context.applicationContext)
+                    }, 15000L)
                 }
             }
         )
+    }
+
+    private fun notifyWaiters(ad: AppOpenAd?) {
+        if (pendingWaiters.isNotEmpty()) {
+            val copy = ArrayList(pendingWaiters)
+            pendingWaiters.clear()
+            for (waiter in copy) {
+                waiter.invoke(ad)
+            }
+        }
     }
 
     fun showAdIfAvailable() {
@@ -68,7 +90,9 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
         val isShowingInter = AdStateManager.isShowingFullScreenAd.value
 
         if (!isAdAvailable() || isPremium || isShowingInter) {
-            loadAd(application)
+            if (!isAdAvailable() && !isLoadingAd) {
+                loadAd(application)
+            }
             return
         }
 
@@ -89,55 +113,53 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
         return dateDifference < numMilliSecondsPerHour * numHours
     }
 
+    /**
+     * High Show Rate Optimization for Splash:
+     * Waits for existing in-flight ad rather than spawning redundant requests.
+     */
     fun fetchAdAndShow(activity: Activity, onComplete: () -> Unit) {
-        val isPremium = BillingHelper.getInstance(application).isPremium.value
+        isColdStart = false // Cold start handled by splash
 
+        val isPremium = BillingHelper.getInstance(application).isPremium.value
         if (isPremium || activity.isFinishing || activity.isDestroyed) {
             onComplete()
             return
         }
 
+        // Case 1: Ad is already available -> show it
         if (isAdAvailable()) {
             showAdNow(activity, onComplete)
-        } else {
-            isLoadingAd = true
-            var isTimeout = false
-            val request = AdRequest.Builder().build()
-            
-            AppOpenAd.load(
-                activity,
-                AD_UNIT_ID,
-                request,
-                object : AppOpenAd.AppOpenAdLoadCallback() {
-                    override fun onAdLoaded(ad: AppOpenAd) {
-                        appOpenAd = ad
-                        isLoadingAd = false
-                        loadTime = Date().time
-                        if (!isTimeout && !activity.isFinishing && !activity.isDestroyed) {
-                            showAdNow(activity, onComplete)
-                        } else if (!isTimeout) {
-                            onComplete()
-                        }
-                    }
-                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                        isLoadingAd = false
-                        if (!isTimeout) {
-                            onComplete()
-                        }
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            loadAd(application)
-                        }, 3000L)
-                    }
-                }
-            )
-            
-            // Safety timeout: if ad doesn't load in 4 seconds, proceed anyway
-            Handler(Looper.getMainLooper()).postDelayed({
-                if (isLoadingAd && !isTimeout) {
-                    isTimeout = true
+            return
+        }
+
+        // Case 2: Ad is loading or needs to load -> Wait with timeout
+        val handler = Handler(Looper.getMainLooper())
+        var isResolved = false
+
+        val timeoutRunnable = Runnable {
+            if (!isResolved) {
+                isResolved = true
+                onComplete()
+            }
+        }
+        // Wait up to 3.5s for ad
+        handler.postDelayed(timeoutRunnable, 3500L)
+
+        pendingWaiters.add { loadedAd ->
+            if (!isResolved) {
+                isResolved = true
+                handler.removeCallbacks(timeoutRunnable)
+                if (loadedAd != null && !activity.isFinishing && !activity.isDestroyed) {
+                    showAdNow(activity, onComplete)
+                } else {
                     onComplete()
                 }
-            }, 4000L)
+            }
+        }
+
+        // If not already loading, trigger load
+        if (!isLoadingAd) {
+            loadAd(application)
         }
     }
 
@@ -146,18 +168,21 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
             onComplete()
             return
         }
+
+        val adToShow = appOpenAd
+        appOpenAd = null // Consume immediately
+
         AdLoadingDialogHelper.showLoadingAndThen(activity) {
             try {
-                if (!activity.isFinishing && !activity.isDestroyed && appOpenAd != null) {
-                    appOpenAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                if (!activity.isFinishing && !activity.isDestroyed && adToShow != null) {
+                    adToShow.adEventCallback = object : AppOpenAdEventCallback {
                         override fun onAdDismissedFullScreenContent() {
-                            appOpenAd = null
                             AdStateManager.isShowingFullScreenAd.value = false
-                            loadAd(application)
+                            loadAd(application) // Preload next immediately
                             onComplete()
                         }
-                        override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                            appOpenAd = null
+                        override fun onAdFailedToShowFullScreenContent(fullScreenContentError: FullScreenContentError) {
+                            Log.e("AdMobAppOpen", "Failed to show: ${fullScreenContentError.message}")
                             AdStateManager.isShowingFullScreenAd.value = false
                             loadAd(application)
                             onComplete()
@@ -166,12 +191,14 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
                             AdStateManager.isShowingFullScreenAd.value = true
                         }
                     }
-                    appOpenAd?.show(activity)
+                    adToShow.show(activity)
                 } else {
                     onComplete()
+                    loadAd(application)
                 }
             } catch (e: Exception) {
                 onComplete()
+                loadAd(application)
             }
         }
     }
