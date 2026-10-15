@@ -393,7 +393,7 @@ fun AppUninstallerScreen(
                                     apk = apk,
                                     viewModel = viewModel,
                                     onToggle = { viewModel.toggleApkSelection(apk.path) },
-                                    onDelete = { viewModel.deleteSingleApk(apk.path) }
+                                    onDelete = { viewModel.deleteSingleApk(context, apk.path) }
                                 )
                             }
                         }
@@ -422,7 +422,7 @@ fun AppUninstallerScreen(
             }
         } else if (uiState.selectedTab == UninstallerTab.APK_FILES && selectedApksCount > 0) {
             Button(
-                onClick = { viewModel.deleteSelectedApks() },
+                onClick = { viewModel.deleteSelectedApks(context) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(46.dp),

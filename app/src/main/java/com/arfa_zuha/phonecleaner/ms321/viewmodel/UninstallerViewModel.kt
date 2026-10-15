@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Collections
 import java.util.Locale
 
@@ -76,7 +79,7 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /**
-     * Instantly removes an uninstalled package from the UI list.
+     * Instantly removes an uninstalled package from the UI list upon receiving system OS confirmation.
      * Called when BroadcastReceiver catches ACTION_PACKAGE_REMOVED or ACTION_PACKAGE_FULLY_REMOVED.
      */
     fun onPackageRemoved(packageName: String, context: Context? = null) {
@@ -84,7 +87,7 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
         _uiState.update { state ->
             state.copy(
                 installedApps = state.installedApps.filter { it.packageName != packageName },
-                statusMessage = "Uninstalled $packageName"
+                statusMessage = "Successfully uninstalled $packageName"
             )
         }
         
@@ -180,51 +183,77 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
         _uiState.update { it.copy(apkFiles = updatedApks) }
     }
 
-    fun deleteSelectedApks() {
+    fun deleteSelectedApks(context: Context) {
         viewModelScope.launch {
             val selectedPaths = _uiState.value.apkFiles.filter { it.isSelected }.map { it.path }
             if (selectedPaths.isEmpty()) return@launch
 
-            // Immediate optimistic UI update: instantly remove from list
-            _uiState.update { state ->
-                state.copy(
-                    apkFiles = state.apkFiles.filter { it.path !in selectedPaths }
-                )
-            }
-
             val (count, freedBytes) = repository.deleteApkFiles(selectedPaths)
+            val updatedApks = repository.scanApkFiles()
+
+            val failedCount = selectedPaths.size - count
+            if (failedCount > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+                _uiState.update { it.copy(statusMessage = "Full Storage Access required to delete $failedCount APK file(s).") }
+                requestStoragePermission(context)
+            }
 
             _uiState.update {
                 it.copy(
-                    statusMessage = if (count > 0) "Successfully deleted $count APK file(s) and freed ${formatBytes(freedBytes)}!" else "Could not delete selected APK file(s)"
+                    apkFiles = updatedApks,
+                    statusMessage = if (count > 0) "Successfully deleted $count APK file(s) and freed ${formatBytes(freedBytes)}!" else "Failed to delete selected APK file(s). Storage permission required."
                 )
             }
         }
     }
 
-    fun deleteSingleApk(path: String) {
+    fun deleteSingleApk(context: Context, path: String) {
         viewModelScope.launch {
-            // Immediate optimistic UI update: instantly remove from list
-            _uiState.update { state ->
-                state.copy(apkFiles = state.apkFiles.filter { it.path != path })
-            }
-
             val (count, freedBytes) = repository.deleteApkFiles(listOf(path))
-            _uiState.update {
-                it.copy(
-                    statusMessage = if (count > 0) "Deleted 1 APK file (${formatBytes(freedBytes)})" else "Failed to delete APK file"
-                )
+            val fileStillExists = try { File(path).exists() } catch (e: Exception) { false }
+
+            if (count > 0 || !fileStillExists) {
+                _uiState.update { state ->
+                    state.copy(
+                        apkFiles = state.apkFiles.filter { it.path != path },
+                        statusMessage = "Successfully deleted 1 APK file (${formatBytes(freedBytes)})"
+                    )
+                }
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+                    _uiState.update { it.copy(statusMessage = "Full Storage Access required to delete APK files.") }
+                    requestStoragePermission(context)
+                } else {
+                    _uiState.update { it.copy(statusMessage = "Unable to delete APK file. File may be read-only or in use.") }
+                }
+                val updatedApks = repository.scanApkFiles()
+                _uiState.update { it.copy(apkFiles = updatedApks) }
+            }
+        }
+    }
+
+    private fun requestStoragePermission(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
             }
         }
     }
 
     fun uninstallApp(context: Context, packageName: String) {
         pendingUninstallPackages.add(packageName)
-        
-        // Optimistic UI update: remove package from current list immediately
-        _uiState.update { state ->
-            state.copy(installedApps = state.installedApps.filter { it.packageName != packageName })
-        }
 
         try {
             val packageUri = Uri.fromParts("package", packageName, null)
