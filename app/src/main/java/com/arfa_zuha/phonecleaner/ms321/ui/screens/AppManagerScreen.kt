@@ -323,17 +323,33 @@ fun AppManagerScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(filteredApps) { app ->
+                    items(filteredApps, key = { it.packageName }) { app ->
                         AppItemCard(
                             app = app,
                             viewModel = viewModel,
                             sixMonthsAgo = sixMonthsAgo,
                             hasPermission = hasPermission,
                             onAppClick = {
-                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = Uri.parse("package:${app.packageName}")
+                                if (isUnusedFor6Months(app)) {
+                                    try {
+                                        val packageUri = Uri.fromParts("package", app.packageName, null)
+                                        val uninstallIntent = Intent(Intent.ACTION_DELETE, packageUri).apply {
+                                            putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        context.startActivity(uninstallIntent)
+                                    } catch (e: Exception) {
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.parse("package:${app.packageName}")
+                                        }
+                                        context.startActivity(intent)
+                                    }
+                                } else {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.parse("package:${app.packageName}")
+                                    }
+                                    context.startActivity(intent)
                                 }
-                                context.startActivity(intent)
                             }
                         )
                     }

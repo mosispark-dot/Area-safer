@@ -3,6 +3,7 @@ package com.arfa_zuha.phonecleaner.ms321.viewmodel
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
@@ -12,11 +13,13 @@ import com.arfa_zuha.phonecleaner.ms321.data.AppSortOption
 import com.arfa_zuha.phonecleaner.ms321.data.InstalledAppItem
 import com.arfa_zuha.phonecleaner.ms321.data.UninstallerRepository
 import com.arfa_zuha.phonecleaner.ms321.data.UninstallerTab
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Collections
 import java.util.Locale
 
 data class UninstallerUiState(
@@ -36,6 +39,9 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
     private val _uiState = MutableStateFlow(UninstallerUiState())
     val uiState: StateFlow<UninstallerUiState> = _uiState.asStateFlow()
 
+    // Thread-safe set of package names currently being uninstalled
+    val pendingUninstallPackages: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
+
     init {
         scanAll()
     }
@@ -43,13 +49,74 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
     fun scanAll() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, statusMessage = null) }
-            val apps = repository.getInstalledApps()
+            val pm = getApplication<Application>().packageManager
+            val rawApps = repository.getInstalledApps()
+            val apps = rawApps.filter { app ->
+                try {
+                    pm.getPackageInfo(app.packageName, 0)
+                    true
+                } catch (e: PackageManager.NameNotFoundException) {
+                    false
+                }
+            }
             val apks = repository.scanApkFiles()
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     installedApps = apps,
                     apkFiles = apks
+                )
+            }
+        }
+    }
+
+    /**
+     * Instantly removes an uninstalled package from the UI list.
+     * Called when BroadcastReceiver catches ACTION_PACKAGE_REMOVED or ACTION_PACKAGE_FULLY_REMOVED.
+     */
+    fun onPackageRemoved(packageName: String) {
+        pendingUninstallPackages.remove(packageName)
+        _uiState.update { state ->
+            state.copy(
+                installedApps = state.installedApps.filter { it.packageName != packageName }
+            )
+        }
+    }
+
+    /**
+     * Checks if any pending uninstalled packages have finished unregistering in PackageManager.
+     * Android PackageManagerService often takes 300-800ms after returning from the dialog.
+     */
+    fun checkPendingUninstall(context: Context) {
+        viewModelScope.launch {
+            val pm = context.packageManager
+            verifyPendingPackages(pm)
+            delay(500)
+            verifyPendingPackages(pm)
+            delay(400)
+            scanAll()
+        }
+    }
+
+    private fun verifyPendingPackages(pm: PackageManager) {
+        val removed = mutableListOf<String>()
+        val currentPending = synchronized(pendingUninstallPackages) { pendingUninstallPackages.toList() }
+        for (pkg in currentPending) {
+            val isStillInstalled = try {
+                pm.getPackageInfo(pkg, 0)
+                true
+            } catch (e: PackageManager.NameNotFoundException) {
+                false
+            }
+            if (!isStillInstalled) {
+                removed.add(pkg)
+            }
+        }
+        if (removed.isNotEmpty()) {
+            pendingUninstallPackages.removeAll(removed.toSet())
+            _uiState.update { state ->
+                state.copy(
+                    installedApps = state.installedApps.filter { it.packageName !in removed }
                 )
             }
         }
@@ -99,6 +166,14 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, statusMessage = null) }
             val selectedPaths = _uiState.value.apkFiles.filter { it.isSelected }.map { it.path }
+            
+            // Immediate optimistic UI update
+            _uiState.update { state ->
+                state.copy(
+                    apkFiles = state.apkFiles.filter { it.path !in selectedPaths }
+                )
+            }
+
             val (count, freedBytes) = repository.deleteApkFiles(selectedPaths)
             val updatedApks = repository.scanApkFiles()
 
@@ -106,13 +181,30 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
                 it.copy(
                     isLoading = false,
                     apkFiles = updatedApks,
-                    statusMessage = "Successfully deleted $count APK files and freed ${formatBytes(freedBytes)} storage!"
+                    statusMessage = if (count > 0) "Successfully deleted $count APK files and freed ${formatBytes(freedBytes)} storage!" else null
+                )
+            }
+        }
+    }
+
+    fun deleteSingleApk(path: String) {
+        viewModelScope.launch {
+            _uiState.update { state ->
+                state.copy(apkFiles = state.apkFiles.filter { it.path != path })
+            }
+            val (count, freedBytes) = repository.deleteApkFiles(listOf(path))
+            val updatedApks = repository.scanApkFiles()
+            _uiState.update {
+                it.copy(
+                    apkFiles = updatedApks,
+                    statusMessage = if (count > 0) "Deleted 1 APK file (${formatBytes(freedBytes)})" else null
                 )
             }
         }
     }
 
     fun uninstallApp(context: Context, packageName: String) {
+        pendingUninstallPackages.add(packageName)
         try {
             val packageUri = Uri.fromParts("package", packageName, null)
             val uninstallIntent = Intent(Intent.ACTION_DELETE, packageUri).apply {

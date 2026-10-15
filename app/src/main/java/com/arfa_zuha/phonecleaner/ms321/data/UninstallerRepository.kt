@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
 import android.os.Environment
+import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -19,10 +21,20 @@ class UninstallerRepository(private val context: Context) {
             val packages = pm.getInstalledPackages(0)
             for (pkg in packages) {
                 val appInfo = pkg.applicationInfo ?: continue
-                val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-
-                val appName = appInfo.loadLabel(pm).toString()
                 val packageName = pkg.packageName
+
+                // Do not show our own cleaner app in uninstaller
+                if (packageName == context.packageName) continue
+
+                // Verify package is actually installed (filters out stale uninstalled cache)
+                try {
+                    pm.getPackageInfo(packageName, 0)
+                } catch (e: PackageManager.NameNotFoundException) {
+                    continue
+                }
+
+                val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                val appName = appInfo.loadLabel(pm).toString()
 
                 var size = 0L
                 try {
@@ -58,7 +70,16 @@ class UninstallerRepository(private val context: Context) {
             for (resolveInfo in launcherApps) {
                 val appInfo = resolveInfo.activityInfo.applicationInfo ?: continue
                 val pkgName = appInfo.packageName
+                if (pkgName == context.packageName) continue
+
                 if (!packageMap.containsKey(pkgName)) {
+                    // Verify it's actually still installed
+                    try {
+                        pm.getPackageInfo(pkgName, 0)
+                    } catch (e: PackageManager.NameNotFoundException) {
+                        continue
+                    }
+
                     val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
                     val appName = resolveInfo.loadLabel(pm).toString()
                     var size = 0L
@@ -153,12 +174,39 @@ class UninstallerRepository(private val context: Context) {
         for (path in paths) {
             try {
                 val f = File(path)
+                val len = if (f.exists()) f.length() else 0L
+                var deleted = false
                 if (f.exists()) {
-                    val len = f.length()
-                    if (f.delete()) {
-                        count++
-                        freed += len
+                    deleted = f.delete()
+                }
+
+                // If standard delete failed (e.g. Scoped Storage on modern Android), attempt MediaStore delete
+                if (!deleted) {
+                    try {
+                        val uri = MediaStore.Files.getContentUri("external")
+                        val rows = context.contentResolver.delete(
+                            uri,
+                            "${MediaStore.MediaColumns.DATA}=?",
+                            arrayOf(path)
+                        )
+                        if (rows > 0) {
+                            deleted = true
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
+                }
+
+                // Notify media scanner to remove entry from media database
+                try {
+                    MediaScannerConnection.scanFile(context, arrayOf(path), null, null)
+                } catch (e: Exception) {
+                    // ignore
+                }
+
+                if (deleted || !f.exists()) {
+                    count++
+                    freed += len
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -1,8 +1,13 @@
 package com.arfa_zuha.phonecleaner.ms321.ui.screens
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,7 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,11 +58,49 @@ fun AppUninstallerScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Real-time BroadcastReceiver for instantaneous OS package uninstallation events
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context?, intent: Intent?) {
+                val action = intent?.action
+                if (action == Intent.ACTION_PACKAGE_REMOVED || action == Intent.ACTION_PACKAGE_FULLY_REMOVED) {
+                    val isReplacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+                    if (!isReplacing) {
+                        val pkg = intent.data?.schemeSpecificPart
+                        if (!pkg.isNullOrEmpty()) {
+                            viewModel.onPackageRemoved(pkg)
+                        }
+                    }
+                }
+            }
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
+            addDataScheme("package")
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            context.registerReceiver(receiver, filter)
+        }
+
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+
     // Auto-refresh list when user returns from System Uninstall Dialog
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.scanAll()
+                viewModel.checkPendingUninstall(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -259,11 +302,12 @@ fun AppUninstallerScreen(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(filteredApps) { app ->
+                            items(filteredApps, key = { it.packageName }) { app ->
                                 InstalledAppCard(
                                     app = app,
                                     viewModel = viewModel,
-                                    onToggle = { viewModel.toggleAppSelection(app.packageName) }
+                                    onToggle = { viewModel.toggleAppSelection(app.packageName) },
+                                    onUninstall = { viewModel.uninstallApp(context, app.packageName) }
                                 )
                             }
                         }
@@ -276,11 +320,12 @@ fun AppUninstallerScreen(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(filteredApks) { apk ->
+                            items(filteredApks, key = { it.path }) { apk ->
                                 ApkFileCard(
                                     apk = apk,
                                     viewModel = viewModel,
-                                    onToggle = { viewModel.toggleApkSelection(apk.path) }
+                                    onToggle = { viewModel.toggleApkSelection(apk.path) },
+                                    onDelete = { viewModel.deleteSingleApk(apk.path) }
                                 )
                             }
                         }
@@ -332,7 +377,8 @@ fun AppUninstallerScreen(
 fun InstalledAppCard(
     app: InstalledAppItem,
     viewModel: UninstallerViewModel,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onUninstall: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -391,9 +437,15 @@ fun InstalledAppCard(
 
             Spacer(modifier = Modifier.width(6.dp))
 
-            // 4. Far Right Selection Toggle Button
+            // 4. Far Right Action Button
             Button(
-                onClick = onToggle,
+                onClick = {
+                    if (app.isSelected) {
+                        onToggle()
+                    } else {
+                        onUninstall()
+                    }
+                },
                 modifier = Modifier.height(30.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -416,7 +468,8 @@ fun InstalledAppCard(
 fun ApkFileCard(
     apk: ApkFileItem,
     viewModel: UninstallerViewModel,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -475,9 +528,15 @@ fun ApkFileCard(
 
             Spacer(modifier = Modifier.width(6.dp))
 
-            // 4. Far Right Selection Toggle Button
+            // 4. Far Right Action Button
             Button(
-                onClick = onToggle,
+                onClick = {
+                    if (apk.isSelected) {
+                        onToggle()
+                    } else {
+                        onDelete()
+                    }
+                },
                 modifier = Modifier.height(30.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(

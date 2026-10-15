@@ -232,6 +232,15 @@ class CleanerRepository(private val context: Context) {
 
         for (pkg in packages) {
             val appInfo = pkg.applicationInfo ?: continue
+            val packageName = pkg.packageName
+            if (packageName == context.packageName) continue
+
+            try {
+                pm.getPackageInfo(packageName, 0)
+            } catch (e: PackageManager.NameNotFoundException) {
+                continue
+            }
+
             val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
             @Suppress("DEPRECATION")
             val isGame = (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0 ||
