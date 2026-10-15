@@ -507,24 +507,18 @@ fun InstalledAppCard(
 
             // 4. Far Right Action Button
             Button(
-                onClick = {
-                    if (app.isSelected) {
-                        onToggle()
-                    } else {
-                        onUninstall()
-                    }
-                },
+                onClick = onUninstall,
                 modifier = Modifier.height(30.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (app.isSelected) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.errorContainer,
-                    contentColor = if (app.isSelected) Color.White else MaterialTheme.colorScheme.error
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.error
                 ),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = if (app.isSelected) "✓ Selected" else "Uninstall",
-                    fontSize = 10.sp,
+                    text = "Uninstall",
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -598,24 +592,18 @@ fun ApkFileCard(
 
             // 4. Far Right Action Button
             Button(
-                onClick = {
-                    if (apk.isSelected) {
-                        onToggle()
-                    } else {
-                        onDelete()
-                    }
-                },
+                onClick = onDelete,
                 modifier = Modifier.height(30.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (apk.isSelected) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.errorContainer,
-                    contentColor = if (apk.isSelected) Color.White else MaterialTheme.colorScheme.error
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.error
                 ),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = if (apk.isSelected) "✓ Selected" else "Delete",
-                    fontSize = 10.sp,
+                    text = "Delete",
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
