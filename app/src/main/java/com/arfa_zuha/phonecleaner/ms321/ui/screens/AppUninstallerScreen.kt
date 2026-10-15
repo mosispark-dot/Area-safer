@@ -8,6 +8,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.os.Environment
+import android.provider.Settings
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -145,6 +148,14 @@ fun AppUninstallerScreen(
     val selectedApksCount = selectedApks.size
     val selectedApksSize = selectedApks.sumOf { it.sizeBytes }
 
+    val isAllFilesPermissionGranted = remember(uiState.selectedTab) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            true
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -200,6 +211,63 @@ fun AppUninstallerScreen(
                 modifier = Modifier.weight(1f),
                 onClick = { viewModel.setTab(UninstallerTab.APK_FILES) }
             )
+        }
+
+        // All Files Access Permission Banner for Leftover APK Deletion
+        if (uiState.selectedTab == UninstallerTab.APK_FILES && !isAllFilesPermissionGranted) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FolderSpecial,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Full Storage Access Required",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        Text(
+                            text = "Grant permission to delete leftover APK files permanently.",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                try {
+                                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                                        data = Uri.parse("package:${context.packageName}")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                                    context.startActivity(intent)
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 3.dp),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Text("Grant", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
 
         // Search Bar & Filter Options

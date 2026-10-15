@@ -46,12 +46,14 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
     private val uninstallQueue = Collections.synchronizedList(mutableListOf<String>())
 
     init {
-        scanAll()
+        scanAll(showLoading = true)
     }
 
-    fun scanAll() {
+    fun scanAll(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, statusMessage = null) }
+            if (showLoading) {
+                _uiState.update { it.copy(isLoading = true, statusMessage = null) }
+            }
             val pm = getApplication<Application>().packageManager
             val rawApps = repository.getInstalledApps()
             val apps = rawApps.filter { app ->
@@ -81,7 +83,8 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
         pendingUninstallPackages.remove(packageName)
         _uiState.update { state ->
             state.copy(
-                installedApps = state.installedApps.filter { it.packageName != packageName }
+                installedApps = state.installedApps.filter { it.packageName != packageName },
+                statusMessage = "Uninstalled $packageName"
             )
         }
         
@@ -96,19 +99,19 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
 
     /**
      * Checks if any pending uninstalled packages have finished unregistering in PackageManager.
-     * Android PackageManagerService often takes 300-800ms after returning from the dialog.
+     * Performs silent background verification without showing full-screen loading spinners.
      */
     fun checkPendingUninstall(context: Context) {
         viewModelScope.launch {
             val pm = context.packageManager
             verifyPendingPackages(pm)
-            delay(400)
+            delay(500)
             verifyPendingPackages(pm)
             
             if (uninstallQueue.isNotEmpty()) {
                 processNextInUninstallQueue(context)
             } else {
-                scanAll()
+                scanAll(showLoading = false) // Silent background refresh
             }
         }
     }
@@ -179,10 +182,10 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun deleteSelectedApks() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, statusMessage = null) }
             val selectedPaths = _uiState.value.apkFiles.filter { it.isSelected }.map { it.path }
-            
-            // Immediate optimistic UI update
+            if (selectedPaths.isEmpty()) return@launch
+
+            // Immediate optimistic UI update: instantly remove from list
             _uiState.update { state ->
                 state.copy(
                     apkFiles = state.apkFiles.filter { it.path !in selectedPaths }
@@ -190,13 +193,10 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
             }
 
             val (count, freedBytes) = repository.deleteApkFiles(selectedPaths)
-            val updatedApks = repository.scanApkFiles()
 
             _uiState.update {
                 it.copy(
-                    isLoading = false,
-                    apkFiles = updatedApks,
-                    statusMessage = if (count > 0) "Successfully deleted $count APK files and freed ${formatBytes(freedBytes)} storage!" else null
+                    statusMessage = if (count > 0) "Successfully deleted $count APK file(s) and freed ${formatBytes(freedBytes)}!" else "Could not delete selected APK file(s)"
                 )
             }
         }
@@ -204,15 +204,15 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun deleteSingleApk(path: String) {
         viewModelScope.launch {
+            // Immediate optimistic UI update: instantly remove from list
             _uiState.update { state ->
                 state.copy(apkFiles = state.apkFiles.filter { it.path != path })
             }
+
             val (count, freedBytes) = repository.deleteApkFiles(listOf(path))
-            val updatedApks = repository.scanApkFiles()
             _uiState.update {
                 it.copy(
-                    apkFiles = updatedApks,
-                    statusMessage = if (count > 0) "Deleted 1 APK file (${formatBytes(freedBytes)})" else null
+                    statusMessage = if (count > 0) "Deleted 1 APK file (${formatBytes(freedBytes)})" else "Failed to delete APK file"
                 )
             }
         }
@@ -220,6 +220,12 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun uninstallApp(context: Context, packageName: String) {
         pendingUninstallPackages.add(packageName)
+        
+        // Optimistic UI update: remove package from current list immediately
+        _uiState.update { state ->
+            state.copy(installedApps = state.installedApps.filter { it.packageName != packageName })
+        }
+
         try {
             val packageUri = Uri.fromParts("package", packageName, null)
             val uninstallIntent = Intent(Intent.ACTION_DELETE, packageUri).apply {
