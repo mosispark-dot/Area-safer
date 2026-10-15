@@ -68,7 +68,7 @@ fun AppUninstallerScreen(
                     if (!isReplacing) {
                         val pkg = intent.data?.schemeSpecificPart
                         if (!pkg.isNullOrEmpty()) {
-                            viewModel.onPackageRemoved(pkg)
+                            viewModel.onPackageRemoved(pkg, context)
                         }
                     }
                 }

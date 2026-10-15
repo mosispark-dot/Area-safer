@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,7 @@ class UninstallerRepository(private val context: Context) {
                 // Do not show our own cleaner app in uninstaller
                 if (packageName == context.packageName) continue
 
-                // Verify package is actually installed (filters out stale uninstalled cache)
+                // Verify package is actually installed
                 try {
                     pm.getPackageInfo(packageName, 0)
                 } catch (e: PackageManager.NameNotFoundException) {
@@ -36,10 +37,22 @@ class UninstallerRepository(private val context: Context) {
                 val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
                 val appName = appInfo.loadLabel(pm).toString()
 
+                // Calculate total size including base APK and split APKs
                 var size = 0L
                 try {
                     if (appInfo.sourceDir != null) {
-                        size = File(appInfo.sourceDir).length()
+                        val baseFile = File(appInfo.sourceDir)
+                        if (baseFile.exists()) {
+                            size += baseFile.length()
+                        }
+                    }
+                    if (appInfo.splitSourceDirs != null) {
+                        for (splitDir in appInfo.splitSourceDirs) {
+                            val splitFile = File(splitDir)
+                            if (splitFile.exists()) {
+                                size += splitFile.length()
+                            }
+                        }
                     }
                 } catch (e: Exception) {
                     // ignore
@@ -73,7 +86,6 @@ class UninstallerRepository(private val context: Context) {
                 if (pkgName == context.packageName) continue
 
                 if (!packageMap.containsKey(pkgName)) {
-                    // Verify it's actually still installed
                     try {
                         pm.getPackageInfo(pkgName, 0)
                     } catch (e: PackageManager.NameNotFoundException) {
@@ -85,7 +97,18 @@ class UninstallerRepository(private val context: Context) {
                     var size = 0L
                     try {
                         if (appInfo.sourceDir != null) {
-                            size = File(appInfo.sourceDir).length()
+                            val baseFile = File(appInfo.sourceDir)
+                            if (baseFile.exists()) {
+                                size += baseFile.length()
+                            }
+                        }
+                        if (appInfo.splitSourceDirs != null) {
+                            for (splitDir in appInfo.splitSourceDirs) {
+                                val splitFile = File(splitDir)
+                                if (splitFile.exists()) {
+                                    size += splitFile.length()
+                                }
+                            }
                         }
                     } catch (e: Exception) {
                         // ignore
@@ -129,13 +152,11 @@ class UninstallerRepository(private val context: Context) {
             e.printStackTrace()
         }
 
-        // Removed deceptive fake APKs
-
-        apkList.sortedByDescending { it.sizeBytes }
+        apkList.distinctBy { it.path }.sortedByDescending { it.sizeBytes }
     }
 
     private fun findApksInDirectory(dir: File, resultList: MutableList<ApkFileItem>, pm: PackageManager, depth: Int = 0) {
-        if (depth > 2) return // Fast search limit
+        if (depth > 3) return
         val files = dir.listFiles() ?: return
 
         for (file in files) {
@@ -176,11 +197,12 @@ class UninstallerRepository(private val context: Context) {
                 val f = File(path)
                 val len = if (f.exists()) f.length() else 0L
                 var deleted = false
+
                 if (f.exists()) {
                     deleted = f.delete()
                 }
 
-                // If standard delete failed (e.g. Scoped Storage on modern Android), attempt MediaStore delete
+                // If direct delete returned false (e.g. Scoped Storage), use MediaStore content provider delete
                 if (!deleted) {
                     try {
                         val uri = MediaStore.Files.getContentUri("external")
@@ -191,6 +213,32 @@ class UninstallerRepository(private val context: Context) {
                         )
                         if (rows > 0) {
                             deleted = true
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                // Also query by MediaStore file ID if path match failed
+                if (!deleted) {
+                    try {
+                        val projection = arrayOf(MediaStore.Files.FileColumns._ID)
+                        val cursor = context.contentResolver.query(
+                            MediaStore.Files.getContentUri("external"),
+                            projection,
+                            "${MediaStore.Files.FileColumns.DATA}=?",
+                            arrayOf(path),
+                            null
+                        )
+                        cursor?.use {
+                            if (it.moveToFirst()) {
+                                val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                                val deleteUri = Uri.withAppendedPath(MediaStore.Files.getContentUri("external"), id.toString())
+                                val countDeleted = context.contentResolver.delete(deleteUri, null, null)
+                                if (countDeleted > 0) {
+                                    deleted = true
+                                }
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

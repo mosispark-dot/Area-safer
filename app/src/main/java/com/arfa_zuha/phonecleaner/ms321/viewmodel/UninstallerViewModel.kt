@@ -42,6 +42,9 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
     // Thread-safe set of package names currently being uninstalled
     val pendingUninstallPackages: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
 
+    // Queue for batch uninstallation
+    private val uninstallQueue = Collections.synchronizedList(mutableListOf<String>())
+
     init {
         scanAll()
     }
@@ -74,12 +77,20 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
      * Instantly removes an uninstalled package from the UI list.
      * Called when BroadcastReceiver catches ACTION_PACKAGE_REMOVED or ACTION_PACKAGE_FULLY_REMOVED.
      */
-    fun onPackageRemoved(packageName: String) {
+    fun onPackageRemoved(packageName: String, context: Context? = null) {
         pendingUninstallPackages.remove(packageName)
         _uiState.update { state ->
             state.copy(
                 installedApps = state.installedApps.filter { it.packageName != packageName }
             )
+        }
+        
+        // If batch uninstalling, process next app in queue
+        if (context != null && uninstallQueue.isNotEmpty()) {
+            viewModelScope.launch {
+                delay(300)
+                processNextInUninstallQueue(context)
+            }
         }
     }
 
@@ -91,10 +102,14 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             val pm = context.packageManager
             verifyPendingPackages(pm)
-            delay(500)
-            verifyPendingPackages(pm)
             delay(400)
-            scanAll()
+            verifyPendingPackages(pm)
+            
+            if (uninstallQueue.isNotEmpty()) {
+                processNextInUninstallQueue(context)
+            } else {
+                scanAll()
+            }
         }
     }
 
@@ -236,8 +251,20 @@ class UninstallerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun uninstallSelectedApps(context: Context) {
         val selectedPackages = _uiState.value.installedApps.filter { it.isSelected }.map { it.packageName }
-        for (pkgName in selectedPackages) {
-            uninstallApp(context, pkgName)
+        if (selectedPackages.isEmpty()) return
+
+        uninstallQueue.clear()
+        uninstallQueue.addAll(selectedPackages)
+
+        processNextInUninstallQueue(context)
+    }
+
+    fun processNextInUninstallQueue(context: Context) {
+        synchronized(uninstallQueue) {
+            if (uninstallQueue.isNotEmpty()) {
+                val nextPackage = uninstallQueue.removeAt(0)
+                uninstallApp(context, nextPackage)
+            }
         }
     }
 
