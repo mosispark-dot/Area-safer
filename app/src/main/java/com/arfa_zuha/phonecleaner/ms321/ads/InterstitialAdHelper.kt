@@ -6,36 +6,37 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.arfa_zuha.phonecleaner.ms321.billing.BillingHelper
-import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
-import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
-import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
-import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
-import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
 object InterstitialAdHelper {
     private var interstitialAd: InterstitialAd? = null
     private var isLoading = false
     
-    private const val AD_UNIT_ID = "ca-app-pub-8393457688147659/5382269245" // Real Interstitial Ad ID
+    private const val AD_UNIT_ID = "ca-app-pub-8393457688147659/5382269245" // Real Production Interstitial Ad ID
 
-    // Waiters queue: prevents missed impressions when user taps quickly before ad finishes loading
     private val pendingWaiters = mutableListOf<(InterstitialAd?) -> Unit>()
 
     fun loadAd(context: Context) {
         if (interstitialAd != null || isLoading) return
         
-        // Don't load if user is premium
-        if (BillingHelper.getInstance(context).isPremium.value) return
+        val isPremium = try { BillingHelper.getInstance(context).isPremium.value } catch (e: Exception) { false }
+        if (isPremium) return
 
         isLoading = true
-        Log.d("AdMobInter", "Requesting Interstitial Ad from Next-Gen SDK...")
-        val request = AdRequest.Builder(AD_UNIT_ID).build()
+        Log.d("AdMobInter", "Requesting Interstitial Ad...")
+        val request = AdRequest.Builder().build()
         InterstitialAd.load(
+            context.applicationContext,
+            AD_UNIT_ID,
             request,
-            object : AdLoadCallback<InterstitialAd> {
+            object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
-                    Log.d("AdMobInter", "Interstitial Ad loaded successfully into cache!")
+                    Log.d("AdMobInter", "Interstitial Ad loaded successfully!")
                     interstitialAd = ad
                     isLoading = false
                     notifyWaiters(ad)
@@ -45,7 +46,6 @@ object InterstitialAdHelper {
                     interstitialAd = null
                     isLoading = false
                     notifyWaiters(null)
-                    // Retry with 15s delay, avoid aggressive looping
                     Handler(Looper.getMainLooper()).postDelayed({
                         loadAd(context.applicationContext)
                     }, 15000L)
@@ -64,28 +64,21 @@ object InterstitialAdHelper {
         }
     }
 
-    /**
-     * Shows an interstitial ad and runs [onComplete] when it's closed or if it fails.
-     * High Show Rate Optimization: If ad is currently loading, briefly displays the loading dialog
-     * (up to 2.5s) to wait for the ad rather than dropping the impression opportunity.
-     */
     fun showAd(activity: Activity, onComplete: () -> Unit) {
-        val isPremium = BillingHelper.getInstance(activity).isPremium.value
+        val isPremium = try { BillingHelper.getInstance(activity).isPremium.value } catch (e: Exception) { false }
 
         if (isPremium || activity.isFinishing || activity.isDestroyed) {
             onComplete()
             return
         }
 
-        // Case 1: Ad is already in memory -> show immediately!
         val cachedAd = interstitialAd
         if (cachedAd != null) {
-            interstitialAd = null // Consume
+            interstitialAd = null
             displayAd(activity, cachedAd, onComplete)
             return
         }
 
-        // Case 2: Ad is loading or not cached yet -> Show loading dialog and wait up to 2.5s
         val dialog = AdLoadingDialogHelper.showLoadingDialog(activity)
         val handler = Handler(Looper.getMainLooper())
         var isResolved = false
@@ -98,7 +91,6 @@ object InterstitialAdHelper {
             }
         }
 
-        // 2500ms safety timeout: if ad doesn't load within this window, proceed smoothly
         handler.postDelayed(timeoutRunnable, 2500L)
 
         val waiter: (InterstitialAd?) -> Unit = { ad ->
@@ -116,7 +108,6 @@ object InterstitialAdHelper {
 
         pendingWaiters.add(waiter)
 
-        // If not already loading, trigger load now
         if (!isLoading) {
             loadAd(activity.applicationContext)
         }
@@ -126,13 +117,13 @@ object InterstitialAdHelper {
         AdLoadingDialogHelper.showLoadingAndThen(activity) {
             try {
                 if (!activity.isFinishing && !activity.isDestroyed) {
-                    ad.adEventCallback = object : InterstitialAdEventCallback {
+                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdDismissedFullScreenContent() {
                             AdStateManager.isShowingFullScreenAd.value = false
                             onComplete()
-                            loadAd(activity.applicationContext) // Immediately preload next ad!
+                            loadAd(activity.applicationContext)
                         }
-                        override fun onAdFailedToShowFullScreenContent(fullScreenContentError: FullScreenContentError) {
+                        override fun onAdFailedToShowFullScreenContent(fullScreenContentError: AdError) {
                             Log.e("AdMobInter", "Failed to show: ${fullScreenContentError.message}")
                             AdStateManager.isShowingFullScreenAd.value = false
                             onComplete()
@@ -155,7 +146,7 @@ object InterstitialAdHelper {
     }
 
     private var lastFileManagerAdTime: Long = 0
-    private const val FILE_MANAGER_AD_COOLDOWN_MS = 60 * 1000L // 60 seconds
+    private const val FILE_MANAGER_AD_COOLDOWN_MS = 60 * 1000L
 
     fun showFileManagerAdWithCooldown(activity: Activity, onComplete: () -> Unit) {
         val currentTime = System.currentTimeMillis()

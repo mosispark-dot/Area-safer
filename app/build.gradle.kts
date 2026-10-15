@@ -63,8 +63,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // AdMob Next-Gen SDK & Billing
-    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.5.0")
+    // Production Google Play Services AdMob & Billing
+    implementation("com.google.android.gms:play-services-ads:23.3.0")
     implementation("com.android.billingclient:billing-ktx:8.0.0")
 
     // Firebase Google Analytics
