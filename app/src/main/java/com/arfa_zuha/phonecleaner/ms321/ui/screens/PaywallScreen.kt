@@ -35,8 +35,17 @@ fun PaywallScreen(
     val activity = context as? Activity
     val billingHelper = remember { BillingHelper.getInstance(context) }
     val isPremium by billingHelper.isPremium.collectAsState()
+    val products by billingHelper.productDetailsList.collectAsState()
+    val priceFor: (String, String) -> String = { id, fallback ->
+        if (products.isEmpty()) fallback else (billingHelper.getFormattedPrice(id) ?: fallback)
+    }
     
     var selectedPlan by remember { mutableStateOf(BillingHelper.SUB_WEEKLY) }
+
+    LaunchedEffect(Unit) {
+        billingHelper.queryProductDetails()
+        billingHelper.queryPurchases()
+    }
 
     LaunchedEffect(isPremium) {
         if (isPremium) {
@@ -141,7 +150,7 @@ fun PaywallScreen(
                 ) {
                     PricingCard(
                         title = "Weekly",
-                        price = "$4.00",
+                        price = priceFor(BillingHelper.SUB_WEEKLY, "$4.00") + "/wk",
                         description = "3 Days Free Trial",
                         isSelected = selectedPlan == BillingHelper.SUB_WEEKLY,
                         onClick = { selectedPlan = BillingHelper.SUB_WEEKLY },
@@ -150,7 +159,7 @@ fun PaywallScreen(
                     
                     PricingCard(
                         title = "Monthly",
-                        price = "$10.00",
+                        price = priceFor(BillingHelper.SUB_MONTHLY, "$10.00") + "/mo",
                         description = "Premium Access",
                         isSelected = selectedPlan == BillingHelper.SUB_MONTHLY,
                         onClick = { selectedPlan = BillingHelper.SUB_MONTHLY }
@@ -158,15 +167,14 @@ fun PaywallScreen(
                     
                     PricingCard(
                         title = "Yearly",
-                        price = "$50.00",
+                        price = priceFor(BillingHelper.SUB_YEARLY, "$50.00") + "/yr",
                         description = "Save 75%",
                         isSelected = selectedPlan == BillingHelper.SUB_YEARLY,
                         onClick = { selectedPlan = BillingHelper.SUB_YEARLY }
                     )
-                    
                     PricingCard(
                         title = "Lifetime",
-                        price = "$70.00",
+                        price = priceFor(BillingHelper.PREMIUM_PRODUCT_ID, "$70.00"),
                         description = "One-Time Payment",
                         isSelected = selectedPlan == BillingHelper.PREMIUM_PRODUCT_ID,
                         onClick = { selectedPlan = BillingHelper.PREMIUM_PRODUCT_ID }
