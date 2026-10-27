@@ -156,7 +156,7 @@ fun PaywallScreen(
                 ) {
                     PricingCard(
                         title = "Weekly",
-                        price = priceFor(BillingHelper.SUB_WEEKLY, "$4.00", "/wk"),
+                        price = priceFor(BillingHelper.SUB_WEEKLY, "$3.00", "/wk"),
                         description = "Full Access, Cancel Anytime",
                         isSelected = selectedPlan == BillingHelper.SUB_WEEKLY,
                         onClick = { selectedPlan = BillingHelper.SUB_WEEKLY },
@@ -165,7 +165,7 @@ fun PaywallScreen(
                     
                     PricingCard(
                         title = "Monthly",
-                        price = priceFor(BillingHelper.SUB_MONTHLY, "$10.00", "/mo"),
+                        price = priceFor(BillingHelper.SUB_MONTHLY, "$5.00", "/mo"),
                         description = "Premium Access",
                         isSelected = selectedPlan == BillingHelper.SUB_MONTHLY,
                         onClick = { selectedPlan = BillingHelper.SUB_MONTHLY }
@@ -173,14 +173,14 @@ fun PaywallScreen(
                     
                     PricingCard(
                         title = "Yearly",
-                        price = priceFor(BillingHelper.SUB_YEARLY, "$50.00", "/yr"),
+                        price = priceFor(BillingHelper.SUB_YEARLY, "$25.00", "/yr"),
                         description = "Save 75%",
                         isSelected = selectedPlan == BillingHelper.SUB_YEARLY,
                         onClick = { selectedPlan = BillingHelper.SUB_YEARLY }
                     )
                     PricingCard(
                         title = "Lifetime",
-                        price = priceFor(BillingHelper.PREMIUM_PRODUCT_ID, "$70.00", ""),
+                        price = priceFor(BillingHelper.PREMIUM_PRODUCT_ID, "$30.00", ""),
                         description = "One-Time Payment",
                         isSelected = selectedPlan == BillingHelper.PREMIUM_PRODUCT_ID,
                         onClick = { selectedPlan = BillingHelper.PREMIUM_PRODUCT_ID }
