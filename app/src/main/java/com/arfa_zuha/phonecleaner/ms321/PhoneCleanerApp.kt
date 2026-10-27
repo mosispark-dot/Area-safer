@@ -37,6 +37,9 @@ class PhoneCleanerApp : Application() {
                 appOpenAdManager.loadAd(this)
                 InterstitialAdHelper.loadAd(this)
             }
+            // Start preloading immediately at millisecond 0 without waiting for adapter callback delay
+            appOpenAdManager.loadAd(this)
+            InterstitialAdHelper.loadAd(this)
         } catch (e: Exception) {
             e.printStackTrace()
         }

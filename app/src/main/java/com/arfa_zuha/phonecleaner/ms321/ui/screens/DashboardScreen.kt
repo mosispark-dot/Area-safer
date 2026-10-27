@@ -52,7 +52,7 @@ fun DashboardScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Header with Normal Sized AI Cleaner Branding Icon
+        // Header with Normal Sized Phone Cleaner Branding Icon
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -71,19 +71,19 @@ fun DashboardScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ai_cleaner_icon),
-                        contentDescription = "AI Cleaner Logo",
+                        contentDescription = "Phone Cleaner Logo",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
                 Column {
                     Text(
-                        text = "Sky Clean AI",
+                        text = "Phone Cleaner",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Storage & Memory Optimizer",
+                        text = "Storage Cleaner & File Manager",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -158,7 +158,7 @@ fun DashboardScreen(
                     ) {
                         Badge(containerColor = MaterialTheme.colorScheme.primary) {
                             Text(
-                                text = "SYSTEM SECURE",
+                                text = "STORAGE STATUS",
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
@@ -231,6 +231,8 @@ fun DashboardScreen(
             }
         }
 
+        com.arfa_zuha.phonecleaner.ms321.ads.MediumRectangleAd(modifier = Modifier.padding(vertical = 4.dp))
+
         val sixMonthsAgo = androidx.compose.runtime.remember { System.currentTimeMillis() - (180L * 24L * 60L * 60L * 1000L) }
         val context = androidx.compose.ui.platform.LocalContext.current
         val hasUsagePermission = androidx.compose.runtime.remember(context) { com.arfa_zuha.phonecleaner.ms321.data.AppUsageRepository.hasUsagePermission(context) }
@@ -278,15 +280,15 @@ fun DashboardScreen(
                 )
             }
 
-            // Row 2: AI Cleaner & File Manager
+            // Row 2: Junk Cleaner & File Manager
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 InteractiveFeatureCardWithDrawable(
                     modifier = Modifier.weight(1f),
-                    title = "AI Cleaner",
-                    subtitle = "Smart junk scan",
+                    title = "Junk Cleaner",
+                    subtitle = "Clean temp & cache",
                     drawableRes = R.drawable.ai_cleaner_icon,
                     onClick = onNavigateToCleaner
                 )
@@ -358,8 +360,6 @@ fun DashboardScreen(
             }
         }
 
-        // Medium Rectangle AdMob Ad below APK Uninstaller & Unused Apps
-        com.arfa_zuha.phonecleaner.ms321.ads.MediumRectangleAd(modifier = Modifier.padding(vertical = 4.dp))
 
         // Storage Breakdown Card
         if (storage != null) {

@@ -105,7 +105,9 @@ class MainActivity : ComponentActivity() {
                         if (currentScreen == Screen.MediaCategory) {
                             currentScreen = Screen.FileManager
                         } else {
-                            currentScreen = Screen.Dashboard
+                            com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper.showAdWithCooldown(this@MainActivity) {
+                                currentScreen = Screen.Dashboard
+                            }
                         }
                     }
 

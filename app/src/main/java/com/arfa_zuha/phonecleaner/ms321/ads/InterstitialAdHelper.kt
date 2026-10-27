@@ -91,7 +91,8 @@ object InterstitialAdHelper {
             }
         }
 
-        handler.postDelayed(timeoutRunnable, 2500L)
+        // Set to 4000ms so that real-world mobile latency (3-5s) doesn't cause false timeouts
+        handler.postDelayed(timeoutRunnable, 4000L)
 
         val waiter: (InterstitialAd?) -> Unit = { ad ->
             if (!isResolved) {
@@ -145,14 +146,18 @@ object InterstitialAdHelper {
         }
     }
 
-    private var lastFileManagerAdTime: Long = 0
-    private const val FILE_MANAGER_AD_COOLDOWN_MS = 60 * 1000L
+    private var lastAdShowTime: Long = 0
+    private const val AD_COOLDOWN_MS = 30 * 1000L
 
     fun showFileManagerAdWithCooldown(activity: Activity, onComplete: () -> Unit) {
+        showAdWithCooldown(activity, AD_COOLDOWN_MS, onComplete)
+    }
+
+    fun showAdWithCooldown(activity: Activity, cooldownMs: Long = AD_COOLDOWN_MS, onComplete: () -> Unit) {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastFileManagerAdTime >= FILE_MANAGER_AD_COOLDOWN_MS) {
+        if (currentTime - lastAdShowTime >= cooldownMs) {
             showAd(activity) {
-                lastFileManagerAdTime = System.currentTimeMillis()
+                lastAdShowTime = System.currentTimeMillis()
                 onComplete()
             }
         } else {

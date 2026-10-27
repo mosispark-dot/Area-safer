@@ -33,7 +33,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
+import com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper
+import com.arfa_zuha.phonecleaner.ms321.ads.NativeBannerAd
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -130,6 +133,7 @@ fun DuplicateScreen(
     }
 
     val context = LocalContext.current
+    val currentActivity = context as? Activity ?: generateSequence(context) { if (it is android.content.ContextWrapper) it.baseContext else null }.firstOrNull { it is Activity } as? Activity
     val isLoading by viewModel.isLoading.collectAsState()
     
     // Keep screen on during scanning
@@ -209,6 +213,7 @@ fun DuplicateScreen(
 @Composable
 fun DuplicateCategories(onCategoryClick: (FileCategory) -> Unit) {
     val context = LocalContext.current
+    val currentActivity = context as? Activity ?: generateSequence(context) { if (it is android.content.ContextWrapper) it.baseContext else null }.firstOrNull { it is Activity } as? Activity
     val isAllFilesPermissionGranted = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
@@ -408,6 +413,7 @@ fun DuplicateResultsView(
     onPreviewFile: (DuplicateFile) -> Unit
 ) {
     val context = LocalContext.current
+    val currentActivity = context as? Activity ?: generateSequence(context) { if (it is android.content.ContextWrapper) it.baseContext else null }.firstOrNull { it is Activity } as? Activity
     val isLoading by viewModel.isLoading.collectAsState()
     val scanProgressPercent by viewModel.scanProgressPercent.collectAsState()
     val scanPhaseMessage by viewModel.scanPhaseMessage.collectAsState()
@@ -467,7 +473,7 @@ fun DuplicateResultsView(
                     )
 
                     Text(
-                        text = "Sky Clean AI is analyzing MD5 signatures & storage files...",
+                        text = "Analyzing MD5 signatures & storage files...",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -548,7 +554,13 @@ fun DuplicateResultsView(
 
                 // Delete Button
                 Button(
-                    onClick = { viewModel.deleteSelectedFiles() },
+                    onClick = {
+                        viewModel.deleteSelectedFiles {
+                            currentActivity?.let { act ->
+                                InterstitialAdHelper.showAd(act) {}
+                            }
+                        }
+                    },
                     enabled = selectedCloneFiles.isNotEmpty(),
                     modifier = Modifier
                         .weight(2f)
@@ -639,6 +651,7 @@ fun DuplicateImageItem(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val currentActivity = context as? Activity ?: generateSequence(context) { if (it is android.content.ContextWrapper) it.baseContext else null }.firstOrNull { it is Activity } as? Activity
     val fileExists = remember(file.path, file.uri) {
         (file.path.isNotEmpty() && File(file.path).exists()) || file.uri != Uri.EMPTY
     }
@@ -899,6 +912,7 @@ fun FastAudioPlayer(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val currentActivity = context as? Activity ?: generateSequence(context) { if (it is android.content.ContextWrapper) it.baseContext else null }.firstOrNull { it is Activity } as? Activity
     var isPlaying by remember { mutableStateOf(false) }
     var currentPosition by remember { mutableFloatStateOf(0f) }
     var duration by remember { mutableFloatStateOf(1f) }
@@ -1038,6 +1052,7 @@ fun ImagePreviewDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val currentActivity = context as? Activity ?: generateSequence(context) { if (it is android.content.ContextWrapper) it.baseContext else null }.firstOrNull { it is Activity } as? Activity
     val imageModel: Any = remember(file.uri, file.path, file.previewUrl) {
         when {
             file.uri != Uri.EMPTY -> file.uri

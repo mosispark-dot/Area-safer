@@ -11,7 +11,6 @@ import com.arfa_zuha.phonecleaner.ms321.data.CleanerRepository
 import com.arfa_zuha.phonecleaner.ms321.data.CompressionRepository
 import com.arfa_zuha.phonecleaner.ms321.data.CompressionResult
 import com.arfa_zuha.phonecleaner.ms321.data.CompressionType
-import com.arfa_zuha.phonecleaner.ms321.data.PowerMode
 import com.arfa_zuha.phonecleaner.ms321.data.StorageInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,12 +49,7 @@ data class CompressionUiState(
 }
 
 data class BatteryUiState(
-    val batteryInfo: BatteryInfo? = null,
-    val selectedPowerMode: PowerMode = PowerMode.NORMAL,
-    val isOptimizing: Boolean = false,
-    val isOptimized: Boolean = false,
-    val optimizationMessage: String? = null,
-    val boostedMinutesGained: Int = 0
+    val batteryInfo: BatteryInfo? = null
 )
 
 class CleanerViewModel(application: Application) : AndroidViewModel(application) {
@@ -93,7 +87,7 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun clearJunkFiles() {
+    fun clearJunkFiles(onFinished: (() -> Unit)? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, statusMessage = "Cleaning junk & temp files...") }
             val cleared = repository.clearJunkFiles()
@@ -105,6 +99,7 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
                     statusMessage = "Successfully freed ${formatBytes(cleared)} of junk files!"
                 )
             }
+            onFinished?.invoke()
         }
     }
 
@@ -113,27 +108,6 @@ class CleanerViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val info = batteryRepository.getBatteryInfo()
             _batteryState.update { it.copy(batteryInfo = info) }
-        }
-    }
-
-    fun setPowerMode(mode: PowerMode) {
-        _batteryState.update { it.copy(selectedPowerMode = mode) }
-    }
-
-    fun optimizeBattery() {
-        viewModelScope.launch {
-            _batteryState.update { it.copy(isOptimizing = true, optimizationMessage = null) }
-            val (boostedMins, msg) = batteryRepository.optimizeBattery()
-            val updatedInfo = batteryRepository.getBatteryInfo()
-            _batteryState.update {
-                it.copy(
-                    batteryInfo = updatedInfo,
-                    isOptimizing = false,
-                    isOptimized = true,
-                    optimizationMessage = msg,
-                    boostedMinutesGained = boostedMins
-                )
-            }
         }
     }
 

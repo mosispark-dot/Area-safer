@@ -138,7 +138,8 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
                 onComplete()
             }
         }
-        handler.postDelayed(timeoutRunnable, 3500L)
+        // Increased to 5000ms to allow AdMob network responses on real mobile connections without dropping matched ads
+        handler.postDelayed(timeoutRunnable, 5000L)
 
         pendingWaiters.add { loadedAd ->
             if (!isResolved) {

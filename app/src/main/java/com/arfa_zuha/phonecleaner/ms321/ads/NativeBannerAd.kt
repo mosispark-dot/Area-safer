@@ -86,7 +86,7 @@ fun NativeBannerAd(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp)
+            .wrapContentHeight()
             .clip(RoundedCornerShape(12.dp)),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
@@ -101,7 +101,10 @@ fun NativeBannerAd(
                 factory = { ctx ->
                     AdView(ctx).apply {
                         adViewRef = this
-                        setAdSize(AdSize.BANNER)
+                        val displayMetrics = ctx.resources.displayMetrics
+                        val adWidth = (displayMetrics.widthPixels / displayMetrics.density).toInt()
+                        val adaptiveSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, adWidth)
+                        setAdSize(adaptiveSize)
                         adUnitId = BANNER_AD_UNIT_ID
                         adListener = object : AdListener() {
                             override fun onAdLoaded() {
@@ -167,14 +170,14 @@ fun MediumRectangleAd(
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(6.dp),
             contentAlignment = Alignment.Center
         ) {
             AndroidView(
@@ -218,8 +221,8 @@ fun MediumRectangleAd(
                     }
 
                     val adIconView = ImageView(ctx).apply {
-                        layoutParams = LinearLayout.LayoutParams(dpToPx(40), dpToPx(40)).apply {
-                            rightMargin = dpToPx(10)
+                        layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30)).apply {
+                            rightMargin = dpToPx(8)
                         }
                         scaleType = ImageView.ScaleType.FIT_CENTER
                     }
@@ -236,12 +239,12 @@ fun MediumRectangleAd(
 
                     val adBadge = TextView(ctx).apply {
                         text = "Ad"
-                        textSize = 10f
+                        textSize = 9f
                         setTextColor(Color.WHITE)
                         setTypeface(null, Typeface.BOLD)
-                        setPadding(dpToPx(5), dpToPx(1), dpToPx(5), dpToPx(1))
+                        setPadding(dpToPx(4), dpToPx(1), dpToPx(4), dpToPx(1))
                         background = GradientDrawable().apply {
-                            cornerRadius = dpToPx(4).toFloat()
+                            cornerRadius = dpToPx(3).toFloat()
                             setColor(Color.parseColor("#E65100")) // Amber Orange Ad Badge
                         }
                         layoutParams = LinearLayout.LayoutParams(
@@ -253,7 +256,7 @@ fun MediumRectangleAd(
                     }
 
                     val adHeadline = TextView(ctx).apply {
-                        textSize = 14f
+                        textSize = 13f
                         setTypeface(null, Typeface.BOLD)
                         maxLines = 1
                         ellipsize = TextUtils.TruncateAt.END
@@ -264,11 +267,11 @@ fun MediumRectangleAd(
                     headlineRow.addView(adHeadline)
 
                     val adBody = TextView(ctx).apply {
-                        textSize = 12f
-                        maxLines = 2
+                        textSize = 11f
+                        maxLines = 1
                         ellipsize = TextUtils.TruncateAt.END
                         setTextColor(onSurfaceVariantColor)
-                        setPadding(0, dpToPx(2), 0, 0)
+                        setPadding(0, dpToPx(1), 0, 0)
                     }
 
                     textColumn.addView(headlineRow)
@@ -278,29 +281,29 @@ fun MediumRectangleAd(
                     topRow.addView(textColumn)
                     rootLayout.addView(topRow)
 
-                    // MediaView for video or image content
+                    // MediaView for video or image content (compact height)
                     val adMediaView = MediaView(ctx).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
-                            dpToPx(140)
+                            dpToPx(95)
                         ).apply {
-                            topMargin = dpToPx(8)
-                            bottomMargin = dpToPx(8)
+                            topMargin = dpToPx(4)
+                            bottomMargin = dpToPx(4)
                         }
                     }
                     rootLayout.addView(adMediaView)
 
-                    // Call to Action Button
+                    // Call to Action Button (compact height)
                     val adCallToAction = Button(ctx).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
-                            dpToPx(42)
+                            dpToPx(34)
                         )
-                        textSize = 14f
+                        textSize = 12f
                         setTypeface(null, Typeface.BOLD)
                         setTextColor(Color.WHITE)
                         background = GradientDrawable().apply {
-                            cornerRadius = dpToPx(10).toFloat()
+                            cornerRadius = dpToPx(8).toFloat()
                             setColor(primaryColor)
                         }
                     }
@@ -322,7 +325,10 @@ fun MediumRectangleAd(
                         try {
                             val adView = AdView(ctx).apply {
                                 fallbackAdView = this
-                                setAdSize(AdSize.MEDIUM_RECTANGLE)
+                                val displayMetrics = ctx.resources.displayMetrics
+                                val adWidth = (displayMetrics.widthPixels / displayMetrics.density).toInt()
+                                val fallbackSize = AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, adWidth)
+                                setAdSize(fallbackSize)
                                 adUnitId = BANNER_AD_UNIT_ID
                                 adListener = object : AdListener() {
                                     override fun onAdLoaded() {

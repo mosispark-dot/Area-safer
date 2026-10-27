@@ -82,8 +82,7 @@ class CleanerRepository(private val context: Context) {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-                Environment.getExternalStorageDirectory()
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
             )
 
             for (dir in searchDirs) {
@@ -107,11 +106,7 @@ class CleanerRepository(private val context: Context) {
             if (file.isDirectory) {
                 val isJunkFolder = file.name.equals(".thumbnails", ignoreCase = true) ||
                         file.name.equals(".thumb", ignoreCase = true) ||
-                        file.name.equals(".cache", ignoreCase = true) ||
-                        file.name.equals("cache", ignoreCase = true) ||
-                        file.name.equals(".Trash", ignoreCase = true) ||
-                        file.name.equals("Trash", ignoreCase = true) ||
-                        file.name.equals(".Statuses", ignoreCase = true)
+                        file.name.equals(".cache", ignoreCase = true)
 
                 if (isJunkFolder) {
                     val dirSize = getDirSize(file)
@@ -126,8 +121,8 @@ class CleanerRepository(private val context: Context) {
             } else if (file.isFile) {
                 val name = file.name.lowercase()
                 val ext = file.extension.lowercase()
-                val isJunkFile = ext in listOf("tmp", "temp", "log", "bak", "chk", "part", "crdownload", "dime", "old") ||
-                        (ext == "apk" && file.parentFile?.name != "apk") ||
+                // Only clearly temporary / incomplete files. User documents, backups and APKs are NOT touched.
+                val isJunkFile = ext in listOf("tmp", "temp", "log", "chk", "part", "crdownload") ||
                         name.startsWith("cache_") || name.endsWith(".cache")
 
                 if (isJunkFile) {
@@ -162,7 +157,8 @@ class CleanerRepository(private val context: Context) {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM),
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
             )
             for (dir in searchDirs) {
                 if (dir.exists() && dir.isDirectory) {

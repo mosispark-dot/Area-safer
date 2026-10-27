@@ -8,12 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-enum class PowerMode(val title: String, val description: String, val estimatedBoostPercent: Int) {
-    NORMAL("Balanced Mode", "Standard performance & battery usage", 0),
-    SAVER("Smart Eco Saver", "Extends battery life by throttling background tasks", 25),
-    ULTRA("Ultra Power Saver", "Maximum battery saving mode for critical situations", 50)
-}
-
 data class BatteryInfo(
     val level: Int,
     val health: String,
@@ -77,30 +71,5 @@ class BatteryRepository(private val context: Context) {
             technology = tech,
             estimatedRemainingMinutes = remainingMinutes
         )
-    }
-
-    suspend fun optimizeBattery(): Pair<Int, String> = withContext(Dispatchers.IO) {
-        var appsClosed = 0
-        try {
-            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-            val pm = context.packageManager
-            val packages = pm.getInstalledPackages(0)
-            
-            for (packageInfo in packages) {
-                // Don't kill our own app or system apps
-                val appInfo = packageInfo.applicationInfo
-                val isSystemApp = appInfo != null && (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0
-                if (!isSystemApp && packageInfo.packageName != context.packageName) {
-                    am.killBackgroundProcesses(packageInfo.packageName)
-                    appsClosed++
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        
-        delay(800) // For UI animation feel
-        val boostedMinutes = appsClosed * 2 // Factual heuristic instead of random fake numbers
-        Pair(boostedMinutes, "Optimized and hibernated $appsClosed background apps.")
     }
 }

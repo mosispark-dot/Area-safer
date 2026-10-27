@@ -1,6 +1,7 @@
 package com.arfa_zuha.phonecleaner.ms321.ui.screens
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,8 +37,13 @@ fun PaywallScreen(
     val billingHelper = remember { BillingHelper.getInstance(context) }
     val isPremium by billingHelper.isPremium.collectAsState()
     val products by billingHelper.productDetailsList.collectAsState()
-    val priceFor: (String, String) -> String = { id, fallback ->
-        if (products.isEmpty()) fallback else (billingHelper.getFormattedPrice(id) ?: fallback)
+    val priceFor: (String, String, String) -> String = { id, fallback, suffix ->
+        val formatted = if (products.isEmpty()) null else billingHelper.getFormattedPrice(id)
+        if (formatted != null) {
+            formatted
+        } else {
+            fallback + suffix
+        }
     }
     
     var selectedPlan by remember { mutableStateOf(BillingHelper.SUB_WEEKLY) }
@@ -124,7 +130,7 @@ fun PaywallScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Unlock all features, remove ads & get ultimate performance optimization.",
+                    text = "Unlock all features and remove ads.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = Color.White.copy(alpha = 0.85f),
@@ -135,9 +141,9 @@ fun PaywallScreen(
 
                 // Feature List
                 PremiumFeatureRow("No Ads & Interruptions")
-                PremiumFeatureRow("Deep Junk AI Cleaning")
-                PremiumFeatureRow("Advanced Media Compression")
-                PremiumFeatureRow("Priority Customer Support")
+                PremiumFeatureRow("Junk & Cache Cleaning")
+                PremiumFeatureRow("Media Compression")
+                PremiumFeatureRow("Duplicate File Finder")
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -150,8 +156,8 @@ fun PaywallScreen(
                 ) {
                     PricingCard(
                         title = "Weekly",
-                        price = priceFor(BillingHelper.SUB_WEEKLY, "$4.00") + "/wk",
-                        description = "3 Days Free Trial",
+                        price = priceFor(BillingHelper.SUB_WEEKLY, "$4.00", "/wk"),
+                        description = "Full Access, Cancel Anytime",
                         isSelected = selectedPlan == BillingHelper.SUB_WEEKLY,
                         onClick = { selectedPlan = BillingHelper.SUB_WEEKLY },
                         badge = "POPULAR"
@@ -159,7 +165,7 @@ fun PaywallScreen(
                     
                     PricingCard(
                         title = "Monthly",
-                        price = priceFor(BillingHelper.SUB_MONTHLY, "$10.00") + "/mo",
+                        price = priceFor(BillingHelper.SUB_MONTHLY, "$10.00", "/mo"),
                         description = "Premium Access",
                         isSelected = selectedPlan == BillingHelper.SUB_MONTHLY,
                         onClick = { selectedPlan = BillingHelper.SUB_MONTHLY }
@@ -167,14 +173,14 @@ fun PaywallScreen(
                     
                     PricingCard(
                         title = "Yearly",
-                        price = priceFor(BillingHelper.SUB_YEARLY, "$50.00") + "/yr",
+                        price = priceFor(BillingHelper.SUB_YEARLY, "$50.00", "/yr"),
                         description = "Save 75%",
                         isSelected = selectedPlan == BillingHelper.SUB_YEARLY,
                         onClick = { selectedPlan = BillingHelper.SUB_YEARLY }
                     )
                     PricingCard(
                         title = "Lifetime",
-                        price = priceFor(BillingHelper.PREMIUM_PRODUCT_ID, "$70.00"),
+                        price = priceFor(BillingHelper.PREMIUM_PRODUCT_ID, "$70.00", ""),
                         description = "One-Time Payment",
                         isSelected = selectedPlan == BillingHelper.PREMIUM_PRODUCT_ID,
                         onClick = { selectedPlan = BillingHelper.PREMIUM_PRODUCT_ID }
@@ -207,7 +213,40 @@ fun PaywallScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Subscriptions auto-renew unless canceled in Google Play Subscriptions at least 24 hours before the end of the period. You can cancel anytime.",
+                    fontSize = 10.sp,
+                    color = Color.White.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = {
+                        Toast.makeText(context, "Checking previous purchases...", Toast.LENGTH_SHORT).show()
+                        billingHelper.restorePurchases { restored ->
+                            if (restored) {
+                                Toast.makeText(context, "Purchase restored successfully!", Toast.LENGTH_LONG).show()
+                                onDismiss()
+                            } else {
+                                Toast.makeText(context, "No active purchase found.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                ) {
+                    Text(
+                        text = "Restore Purchases",
+                        fontSize = 12.sp,
+                        color = Color(0xFFFFD700),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

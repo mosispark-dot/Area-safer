@@ -15,9 +15,9 @@ class BillingHelper private constructor(private val context: Context) : Purchase
     companion object {
         /**
          * Product ID of the ONE subscription created in Play Console
-         * (Monetize with Play -> Products -> Subscriptions -> "Product ID" shown under the subscription name).
+         * (From Google Play Console: "weekly_4").
          */
-        const val SUBSCRIPTION_PRODUCT_ID = "REPLACE_WITH_SUBSCRIPTION_PRODUCT_ID"
+        const val SUBSCRIPTION_PRODUCT_ID = "weekly_4"
 
         // Base plan IDs inside that subscription (must match Play Console exactly).
         // The same constants are used as "plan keys" by the paywall UI.
@@ -25,10 +25,10 @@ class BillingHelper private constructor(private val context: Context) : Purchase
         const val SUB_MONTHLY = "montly"
         const val SUB_YEARLY = "yearly"
 
-        // One-time lifetime product (currently disabled / not shown in paywall)
+        // One-time lifetime product
         const val PREMIUM_PRODUCT_ID = "lifetime_premium"
 
-        private val OWNED_IDS = listOf(SUBSCRIPTION_PRODUCT_ID, PREMIUM_PRODUCT_ID)
+        private val OWNED_IDS = listOf(SUBSCRIPTION_PRODUCT_ID, SUB_WEEKLY, SUB_MONTHLY, SUB_YEARLY, PREMIUM_PRODUCT_ID)
 
         private const val PREFS = "billing_prefs"
         private const val KEY_PREMIUM = "is_premium"
@@ -104,14 +104,21 @@ class BillingHelper private constructor(private val context: Context) : Purchase
             return
         }
 
+        val subsCandidates = mutableListOf<String>()
+        if (SUBSCRIPTION_PRODUCT_ID.isNotBlank() && !SUBSCRIPTION_PRODUCT_ID.startsWith("REPLACE_")) {
+            subsCandidates.add(SUBSCRIPTION_PRODUCT_ID)
+        }
+        subsCandidates.addAll(listOf(SUB_WEEKLY, SUB_MONTHLY, SUB_YEARLY, "sub_weekly", "sub_monthly", "sub_yearly"))
+        val distinctSubs = subsCandidates.distinct()
+
         val subsParams = QueryProductDetailsParams.newBuilder()
             .setProductList(
-                listOf(
+                distinctSubs.map { id ->
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(SUBSCRIPTION_PRODUCT_ID)
+                        .setProductId(id)
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build()
-                )
+                }
             )
             .build()
 
@@ -189,12 +196,42 @@ class BillingHelper private constructor(private val context: Context) : Purchase
         }
     }
 
+    /** Explicitly restores past purchases when user taps 'Restore Purchases' in UI. */
+    fun restorePurchases(onResult: (Boolean) -> Unit) {
+        if (!billingClient.isReady) {
+            startConnection { restorePurchases(onResult) }
+            return
+        }
+        var inappOwned: Boolean? = null
+        var subsOwned: Boolean? = null
+
+        fun check() {
+            val inapp = inappOwned ?: return
+            val subs = subsOwned ?: return
+            val owned = inapp || subs
+            setPremium(owned)
+            mainHandler.post { onResult(owned) }
+        }
+
+        billingClient.queryPurchasesAsync(
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+        ) { billingResult, purchases ->
+            inappOwned = if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) handlePurchases(purchases) else false
+            check()
+        }
+        billingClient.queryPurchasesAsync(
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+        ) { billingResult, purchases ->
+            subsOwned = if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) handlePurchases(purchases) else false
+            check()
+        }
+    }
+
     /** Returns true if the list contains a valid purchased premium product. Acknowledges if needed. */
     private fun handlePurchases(purchases: List<Purchase>): Boolean {
         var owned = false
         for (purchase in purchases) {
-            val isOurs = purchase.products.any { it in OWNED_IDS }
-            if (isOurs && purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+            if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                 owned = true
                 if (!purchase.isAcknowledged) {
                     acknowledgePurchase(purchase.purchaseToken)
@@ -233,11 +270,26 @@ class BillingHelper private constructor(private val context: Context) : Purchase
             return _productDetailsList.value.find { it.productId == PREMIUM_PRODUCT_ID }
                 ?.oneTimePurchaseOfferDetails?.formattedPrice
         }
-        val details = subscriptionDetails() ?: return null
-        val offers = details.subscriptionOfferDetails?.filter { it.basePlanId == planId }.orEmpty()
-        val baseOffer = offers.firstOrNull { it.offerId == null } ?: offers.firstOrNull()
-        // Last phase is the recurring (paid) price
-        return baseOffer?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
+
+        // 1. Direct subscription product (e.g. subscription productId is "weekly4")
+        val directProduct = _productDetailsList.value.find { it.productId == planId }
+        if (directProduct != null) {
+            val offers = directProduct.subscriptionOfferDetails.orEmpty()
+            val baseOffer = offers.firstOrNull { it.offerId == null } ?: offers.firstOrNull()
+            val price = baseOffer?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
+            if (price != null) return price
+        }
+
+        // 2. Base plan inside a parent subscription product
+        for (prod in _productDetailsList.value) {
+            val offers = prod.subscriptionOfferDetails?.filter { it.basePlanId == planId }.orEmpty()
+            if (offers.isNotEmpty()) {
+                val baseOffer = offers.firstOrNull { it.offerId == null } ?: offers.firstOrNull()
+                val price = baseOffer?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
+                if (price != null) return price
+            }
+        }
+        return null
     }
 
     fun launchPurchaseFlow(activity: Activity, planId: String, onComplete: ((String) -> Unit)? = null) {
@@ -251,7 +303,7 @@ class BillingHelper private constructor(private val context: Context) : Purchase
         if (planId == PREMIUM_PRODUCT_ID) {
             val lifetime = _productDetailsList.value.find { it.productId == PREMIUM_PRODUCT_ID }
             if (lifetime == null) {
-                toast("Lifetime product not found. Create '$PREMIUM_PRODUCT_ID' in Play Console > In-app products and Activate it.")
+                toast("Lifetime product '$PREMIUM_PRODUCT_ID' not found. Check Play Console > In-app products.")
                 queryProductDetails()
                 return
             }
@@ -268,23 +320,37 @@ class BillingHelper private constructor(private val context: Context) : Purchase
             return
         }
 
-        val details = subscriptionDetails()
-        if (details == null) {
-            toast("Plan not available.\n$diagnostics")
+        // Check if there is a direct product matching planId (Case B: separate subscription per plan)
+        var targetProduct = _productDetailsList.value.find { it.productId == planId }
+        var targetOffer: ProductDetails.SubscriptionOfferDetails? = null
+
+        if (targetProduct != null) {
+            val offers = targetProduct.subscriptionOfferDetails.orEmpty()
+            targetOffer = offers.firstOrNull { offer -> offer.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L } }
+                ?: offers.firstOrNull { it.offerId == null }
+                ?: offers.firstOrNull()
+        } else {
+            // Check if planId is a basePlanId inside any parent subscription (Case A)
+            for (prod in _productDetailsList.value) {
+                val match = selectOffer(prod, planId)
+                if (match != null) {
+                    targetProduct = prod
+                    targetOffer = match
+                    break
+                }
+            }
+        }
+
+        if (targetProduct == null || targetOffer == null) {
+            val available = _productDetailsList.value.map { it.productId }
+            toast("Plan '$planId' not available.\nPlay Products: $available\n$diagnostics")
             queryProductDetails()
             return
         }
 
-        val offer = selectOffer(details, planId)
-        if (offer == null) {
-            val available = details.subscriptionOfferDetails?.map { it.basePlanId }?.distinct()
-            toast("Base plan '$planId' not found. Available base plans: $available")
-            return
-        }
-
         val productParams = BillingFlowParams.ProductDetailsParams.newBuilder()
-            .setProductDetails(details)
-            .setOfferToken(offer.offerToken)
+            .setProductDetails(targetProduct)
+            .setOfferToken(targetOffer.offerToken)
             .build()
 
         val flowParams = BillingFlowParams.newBuilder()

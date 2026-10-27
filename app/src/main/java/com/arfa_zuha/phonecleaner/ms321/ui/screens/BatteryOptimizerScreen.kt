@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import com.arfa_zuha.phonecleaner.ms321.data.PowerMode
 import com.arfa_zuha.phonecleaner.ms321.viewmodel.BatteryUiState
 import com.arfa_zuha.phonecleaner.ms321.viewmodel.CleanerViewModel
 
@@ -38,7 +37,6 @@ fun BatteryOptimizerScreen(
 ) {
     val info = batteryState.batteryInfo
     val level = info?.level ?: 50
-    val totalMinutes = (info?.estimatedRemainingMinutes ?: 600) + (if (batteryState.isOptimized) batteryState.boostedMinutesGained else 0)
 
     // Dynamic Battery Color based on Level
     val batteryColor = when {
@@ -73,7 +71,7 @@ fun BatteryOptimizerScreen(
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Monitor live stats & extend battery life",
+                    text = "Monitor live battery stats",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -144,30 +142,6 @@ fun BatteryOptimizerScreen(
                         )
                     }
                 }
-
-                // Estimated Time
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "~${viewModel.formatMinutesToHours(totalMinutes)} standby time left",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
             }
         }
 
@@ -214,132 +188,6 @@ fun BatteryOptimizerScreen(
             )
         }
 
-        // One-Tap Smart Battery Optimizer Button
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Column {
-                        Text(
-                            text = "Smart Power Optimizer",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Close battery draining apps & extend life",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = { viewModel.optimizeBattery() },
-                    enabled = !batteryState.isOptimizing,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    if (batteryState.isOptimizing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Optimizing Battery Health...", color = Color.White, fontWeight = FontWeight.Bold)
-                    } else {
-                        Icon(imageVector = Icons.Default.Bolt, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Optimize Battery Now", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = batteryState.isOptimized && batteryState.optimizationMessage != null,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    batteryState.optimizationMessage?.let { msg ->
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = msg,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Smart Battery Profiles (Power Modes)
-        Text(
-            text = "Smart Power Saver Profiles",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            PowerModeCard(
-                mode = PowerMode.NORMAL,
-                isSelected = batteryState.selectedPowerMode == PowerMode.NORMAL,
-                onSelect = { viewModel.setPowerMode(PowerMode.NORMAL) }
-            )
-            PowerModeCard(
-                mode = PowerMode.SAVER,
-                isSelected = batteryState.selectedPowerMode == PowerMode.SAVER,
-                onSelect = { viewModel.setPowerMode(PowerMode.SAVER) }
-            )
-            PowerModeCard(
-                mode = PowerMode.ULTRA,
-                isSelected = batteryState.selectedPowerMode == PowerMode.ULTRA,
-                onSelect = { viewModel.setPowerMode(PowerMode.ULTRA) }
-            )
-        }
 
         // Advanced System Settings Shortcuts
         Text(
@@ -459,54 +307,3 @@ fun BatteryMetricCard(
     }
 }
 
-@Composable
-fun PowerModeCard(
-    mode: PowerMode,
-    isSelected: Boolean,
-    onSelect: () -> Unit
-) {
-    Surface(
-        onClick = onSelect,
-        shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(16.dp)
-            )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = mode.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(text = mode.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-
-            if (mode.estimatedBoostPercent > 0) {
-                Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                    Text(
-                        text = "+${mode.estimatedBoostPercent}%",
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            RadioButton(
-                selected = isSelected,
-                onClick = onSelect
-            )
-        }
-    }
-}

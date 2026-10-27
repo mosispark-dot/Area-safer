@@ -26,6 +26,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arfa_zuha.phonecleaner.ms321.viewmodel.CleanerUiState
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
+import com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper
+import com.arfa_zuha.phonecleaner.ms321.ads.NativeBannerAd
 import com.arfa_zuha.phonecleaner.ms321.viewmodel.CleanerViewModel
 
 @Composable
@@ -34,6 +38,8 @@ fun CacheCleanerScreen(
     viewModel: CleanerViewModel,
     onBackClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
     val storage = uiState.storageInfo
     val cacheSize = storage?.cacheBytes ?: 0L
 
@@ -174,7 +180,13 @@ fun CacheCleanerScreen(
                 }
             } else {
                 Button(
-                    onClick = { viewModel.clearJunkFiles() },
+                    onClick = {
+                        viewModel.clearJunkFiles {
+                            activity?.let { act ->
+                                InterstitialAdHelper.showAd(act) {}
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -186,6 +198,8 @@ fun CacheCleanerScreen(
                     Text(text = "Clean Junk Files Now", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
+
+            NativeBannerAd(modifier = Modifier.padding(top = 6.dp))
 
             AnimatedVisibility(visible = uiState.statusMessage != null) {
                 if (uiState.statusMessage != null) {

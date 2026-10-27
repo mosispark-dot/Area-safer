@@ -128,7 +128,7 @@ fun SplashScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ai_cleaner_icon),
-                        contentDescription = "Sky Clean AI Logo",
+                        contentDescription = "Phone Cleaner Logo",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
@@ -142,14 +142,14 @@ fun SplashScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Sky Clean AI",
+                        text = "Phone Cleaner",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.primary
                     )
 
                     Text(
-                        text = "Storage & Memory Optimizer",
+                        text = "Storage Cleaner & File Manager",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -173,7 +173,7 @@ fun SplashScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "🤖 Initializing AI System...",
+                        text = "Ad is loading, please wait...",
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,

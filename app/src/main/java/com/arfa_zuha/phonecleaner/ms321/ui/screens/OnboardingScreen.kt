@@ -58,29 +58,29 @@ fun OnboardingScreen(
 
     val pages = listOf(
         OnboardingPageData(
-            title = "AI-Powered Storage Cleaner",
-            description = "Instantly scan and safely clear hidden junk, temporary app cache, and residual files to free up gigabytes of space.",
+            title = "Storage Cleaner",
+            description = "Scan and clear junk files, temporary app cache, and leftover data to free up storage space.",
             icon = Icons.Default.CleaningServices,
-            badgeText = "⚡ Smart AI Cleaner",
+            badgeText = "🧹 Junk File Cleaner",
             drawableRes = R.drawable.ai_cleaner_icon
         ),
         OnboardingPageData(
-            title = "Detect 6+ Months Unused Apps",
-            description = "Easily discover applications and games you haven't opened in 6 months and clean leftover APK installer files.",
+            title = "Media Compression",
+            description = "Compress large photos, videos, and audio files without losing quality to reclaim valuable storage space.",
+            icon = Icons.Default.FolderZip,
+            badgeText = "🗜️ Media Compressor"
+        ),
+        OnboardingPageData(
+            title = "Detect Unused Apps",
+            description = "Easily discover applications and games you haven't opened in months and uninstall unwanted apps in one place.",
             icon = Icons.Default.PhoneAndroid,
             badgeText = "📱 Unused Apps Manager"
         ),
         OnboardingPageData(
-            title = "Media Compression & Battery Boost",
-            description = "Compress large photos and videos without quality loss while optimizing battery health with one-tap power modes.",
-            icon = Icons.Default.FolderZip,
-            badgeText = "🚀 Ultimate Speed Optimizer"
-        ),
-        OnboardingPageData(
-            title = "Smart File Manager & Duplicate Finder",
-            description = "Easily browse files by media categories and find & delete duplicate photos, videos, and large clone files to recover space.",
+            title = "File & Duplicate Cleaner",
+            description = "Browse files by category and safely delete duplicate photos, videos, and clone files to recover space.",
             icon = Icons.Default.CopyAll,
-            badgeText = "📁 File & Duplicate Cleaner"
+            badgeText = "📁 Duplicate Cleaner"
         )
     )
 
@@ -115,7 +115,7 @@ fun OnboardingScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Sky Clean AI",
+                        text = "Phone Cleaner",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.primary

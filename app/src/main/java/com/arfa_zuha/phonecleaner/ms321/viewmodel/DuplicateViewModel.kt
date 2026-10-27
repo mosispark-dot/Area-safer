@@ -115,7 +115,7 @@ class DuplicateViewModel(application: Application) : AndroidViewModel(applicatio
         _duplicateGroups.value = updatedGroups
     }
 
-    fun deleteSelectedFiles() {
+    fun deleteSelectedFiles(onFinished: (() -> Unit)? = null) {
         viewModelScope.launch {
             val groups = _duplicateGroups.value
             val context = getApplication<Application>().applicationContext
@@ -163,6 +163,7 @@ class DuplicateViewModel(application: Application) : AndroidViewModel(applicatio
                     _selectedGroup.value = updatedSelectedGroup
                 }
             }
+            onFinished?.invoke()
         }
     }
 
