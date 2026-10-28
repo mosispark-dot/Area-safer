@@ -1,17 +1,20 @@
 package com.arfa_zuha.phonecleaner.ms321.ads
 
 import android.graphics.Color
+import android.graphics.Outline
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -170,14 +173,15 @@ fun MediumRectangleAd(
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFFE5E7EB)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(6.dp),
+                .padding(vertical = 8.dp, horizontal = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             AndroidView(
@@ -210,101 +214,93 @@ fun MediumRectangleAd(
                         )
                     }
 
-                    // Header row: Icon + (Ad Badge + Headline) + Body
-                    val topRow = LinearLayout(ctx).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        )
-                    }
-
-                    val adIconView = ImageView(ctx).apply {
-                        layoutParams = LinearLayout.LayoutParams(dpToPx(30), dpToPx(30)).apply {
-                            rightMargin = dpToPx(8)
-                        }
-                        scaleType = ImageView.ScaleType.FIT_CENTER
-                    }
-
-                    val textColumn = LinearLayout(ctx).apply {
-                        orientation = LinearLayout.VERTICAL
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    }
-
-                    val headlineRow = LinearLayout(ctx).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                    }
-
+                    // 1. Top "Advertisement" Pill Badge (matching App Open native style)
                     val adBadge = TextView(ctx).apply {
-                        text = "Ad"
-                        textSize = 9f
+                        text = "Advertisement"
+                        textSize = 9.5f
                         setTextColor(Color.WHITE)
                         setTypeface(null, Typeface.BOLD)
-                        setPadding(dpToPx(4), dpToPx(1), dpToPx(4), dpToPx(1))
+                        setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(3))
                         background = GradientDrawable().apply {
-                            cornerRadius = dpToPx(3).toFloat()
-                            setColor(Color.parseColor("#E65100")) // Amber Orange Ad Badge
+                            cornerRadius = dpToPx(10).toFloat()
+                            setColor(Color.parseColor("#8E8E93")) // Clean Gray Pill Badge
                         }
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            rightMargin = dpToPx(6)
+                            bottomMargin = dpToPx(8)
                         }
                     }
+                    rootLayout.addView(adBadge)
 
+                    // 2. Large Bold Headline
                     val adHeadline = TextView(ctx).apply {
-                        textSize = 13f
+                        textSize = 18f
                         setTypeface(null, Typeface.BOLD)
-                        maxLines = 1
+                        maxLines = 2
                         ellipsize = TextUtils.TruncateAt.END
-                        setTextColor(onSurfaceColor)
+                        setTextColor(Color.parseColor("#1F2937"))
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            bottomMargin = dpToPx(4)
+                        }
                     }
+                    rootLayout.addView(adHeadline)
 
-                    headlineRow.addView(adBadge)
-                    headlineRow.addView(adHeadline)
-
+                    // 3. Subtitle / Advertiser / Body
                     val adBody = TextView(ctx).apply {
-                        textSize = 11f
-                        maxLines = 1
+                        textSize = 13f
+                        maxLines = 2
                         ellipsize = TextUtils.TruncateAt.END
-                        setTextColor(onSurfaceVariantColor)
-                        setPadding(0, dpToPx(1), 0, 0)
+                        setTextColor(Color.parseColor("#6B7280"))
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            bottomMargin = dpToPx(10)
+                        }
                     }
+                    rootLayout.addView(adBody)
 
-                    textColumn.addView(headlineRow)
-                    textColumn.addView(adBody)
+                    // Hidden icon view for binding compatibility
+                    val adIconView = ImageView(ctx).apply {
+                        visibility = View.GONE
+                        layoutParams = LinearLayout.LayoutParams(0, 0)
+                    }
+                    rootLayout.addView(adIconView)
 
-                    topRow.addView(adIconView)
-                    topRow.addView(textColumn)
-                    rootLayout.addView(topRow)
-
-                    // MediaView for video or image content (compact height)
+                    // 4. Large Rich MediaView (Video / Image Banner Preview)
                     val adMediaView = MediaView(ctx).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
-                            dpToPx(95)
+                            dpToPx(180)
                         ).apply {
-                            topMargin = dpToPx(4)
-                            bottomMargin = dpToPx(4)
+                            bottomMargin = dpToPx(12)
+                        }
+                        clipToOutline = true
+                        outlineProvider = object : ViewOutlineProvider() {
+                            override fun getOutline(view: View, outline: Outline) {
+                                outline.setRoundRect(0, 0, view.width, view.height, dpToPx(10).toFloat())
+                            }
                         }
                     }
                     rootLayout.addView(adMediaView)
 
-                    // Call to Action Button (compact height)
+                    // 5. Full Width Call to Action Button ("MORE" / "INSTALL")
                     val adCallToAction = Button(ctx).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
-                            dpToPx(34)
+                            dpToPx(42)
                         )
-                        textSize = 12f
+                        textSize = 13.5f
                         setTypeface(null, Typeface.BOLD)
                         setTextColor(Color.WHITE)
                         background = GradientDrawable().apply {
                             cornerRadius = dpToPx(8).toFloat()
-                            setColor(primaryColor)
+                            setColor(Color.parseColor("#374151")) // Dark Charcoal Button matching reference
                         }
                     }
                     rootLayout.addView(adCallToAction)
@@ -357,20 +353,24 @@ fun MediumRectangleAd(
                             // Populate Headline
                             adHeadline.text = nativeAd.headline ?: ""
 
-                            // Populate Body
+                            // Populate Body / Advertiser
                             if (!nativeAd.body.isNullOrEmpty()) {
                                 adBody.text = nativeAd.body
+                                adBody.visibility = View.VISIBLE
+                            } else if (!nativeAd.advertiser.isNullOrEmpty()) {
+                                adBody.text = nativeAd.advertiser
                                 adBody.visibility = View.VISIBLE
                             } else {
                                 adBody.visibility = View.GONE
                             }
 
-                            // Populate Call To Action
+                            // Populate Call To Action (Uppercase like in reference)
                             if (!nativeAd.callToAction.isNullOrEmpty()) {
-                                adCallToAction.text = nativeAd.callToAction
+                                adCallToAction.text = nativeAd.callToAction?.uppercase()
                                 adCallToAction.visibility = View.VISIBLE
                             } else {
-                                adCallToAction.visibility = View.GONE
+                                adCallToAction.text = "MORE"
+                                adCallToAction.visibility = View.VISIBLE
                             }
 
                             // Populate Icon

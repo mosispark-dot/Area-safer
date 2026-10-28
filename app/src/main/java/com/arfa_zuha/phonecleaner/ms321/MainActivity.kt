@@ -5,7 +5,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BatteryChargingFull
@@ -14,13 +25,20 @@ import androidx.compose.material.icons.filled.CopyAll
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,10 +66,10 @@ import com.arfa_zuha.phonecleaner.ms321.viewmodel.UninstallerViewModel
 import androidx.activity.compose.BackHandler
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard)
-    object Cleaner : Screen("cleaner", "Cleaner", Icons.Default.CleaningServices)
+    object Dashboard : Screen("dashboard", "Cleaner", Icons.Default.CleaningServices)
+    object Cleaner : Screen("cleaner", "Clean Junk", Icons.Default.CleaningServices)
     object Compression : Screen("compression", "Compress", Icons.Default.FolderZip)
-    object Battery : Screen("battery", "Battery Info", Icons.Default.BatteryChargingFull)
+    object Battery : Screen("battery", "Battery", Icons.Default.BatteryChargingFull)
     object Duplicates : Screen("duplicates", "Duplicates", Icons.Default.CopyAll)
     object Uninstaller : Screen("uninstaller", "Uninstaller", Icons.Default.InstallMobile)
     object Apps : Screen("apps", "Unused Apps", Icons.Default.PhoneAndroid)
@@ -116,46 +134,101 @@ class MainActivity : ComponentActivity() {
                         com.arfa_zuha.phonecleaner.ms321.analytics.AnalyticsHelper.logScreenView(currentScreen.route)
                     }
 
-                    val items = listOf(
-                        Screen.Dashboard,
-                        Screen.Battery,
-                        Screen.Compression
-                    )
-
                     Scaffold(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding(),
                     bottomBar = {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            tonalElevation = 6.dp,
-                            modifier = Modifier.fillMaxWidth()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(82.dp)
+                                .navigationBarsPadding(),
+                            contentAlignment = Alignment.BottomCenter
                         ) {
-                            items.forEach { screen ->
-                                val selected = currentScreen == screen
-                                NavigationBarItem(
-                                    icon = {
-                                        Icon(
-                                            imageVector = screen.icon,
-                                            contentDescription = screen.title,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    },
-                                    label = {
-                                        Text(
-                                            text = screen.title,
-                                            fontSize = 11.sp,
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                                        )
-                                    },
-                                    selected = selected,
-                                    onClick = { currentScreen = screen },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(68.dp)
+                                    .align(Alignment.BottomCenter),
+                                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                shadowElevation = 12.dp,
+                                border = BorderStroke(1.2.dp, Color(0xFFE5E7EB))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.SpaceAround,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // 1. Home / Dashboard
+                                    CustomBottomNavItem(
+                                        modifier = Modifier.weight(1f),
+                                        title = "Home",
+                                        icon = Icons.Default.Home,
+                                        selected = currentScreen == Screen.Dashboard,
+                                        onClick = { currentScreen = Screen.Dashboard }
                                     )
+
+                                    // Spacer for Center Floating Clean FAB
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    // 3. Files / Storage Manager
+                                    CustomBottomNavItem(
+                                        modifier = Modifier.weight(1f),
+                                        title = "Files",
+                                        icon = Icons.Default.Folder,
+                                        selected = currentScreen == Screen.FileManager,
+                                        onClick = { currentScreen = Screen.FileManager }
+                                    )
+                                }
+                            }
+
+                            // Center Elevated Smart Cleaner Action Button (FAB)
+                            val fabInteraction = remember { MutableInteractionSource() }
+                            val isFabPressed by fabInteraction.collectIsPressedAsState()
+                            val fabScale by animateFloatAsState(
+                                targetValue = if (isFabPressed) 0.88f else 1.0f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                ),
+                                label = "fab_scale"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .graphicsLayer {
+                                        scaleX = fabScale
+                                        scaleY = fabScale
+                                    }
+                                    .size(60.dp)
+                                    .shadow(elevation = 10.dp, shape = CircleShape, spotColor = Color(0xFF10B981))
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color(0xFF10B981), Color(0xFF059669))
+                                        )
+                                    )
+                                    .border(3.dp, Color.White, CircleShape)
+                                    .clickable(
+                                        interactionSource = fabInteraction,
+                                        indication = null
+                                    ) {
+                                        com.arfa_zuha.phonecleaner.ms321.ads.InterstitialAdHelper.showAd(this@MainActivity) {
+                                            currentScreen = Screen.Cleaner
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CleaningServices,
+                                    contentDescription = "Smart Clean",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
                         }
@@ -260,4 +333,59 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+}
+
+@Composable
+private fun CustomBottomNavItem(
+    modifier: Modifier = Modifier,
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val activeColor = Color(0xFF10B981) // Emerald Green
+    val inactiveColor = Color(0xFF64748B) // Slate Gray
+
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Smart top active indicator line
+        Box(
+            modifier = Modifier
+                .width(26.dp)
+                .height(3.5.dp)
+                .clip(CircleShape)
+                .background(if (selected) activeColor else Color.Transparent)
+        )
+
+        // Icon with soft pill container on active
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (selected) activeColor.copy(alpha = 0.15f) else Color.Transparent)
+                .padding(horizontal = 16.dp, vertical = 3.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = if (selected) activeColor else inactiveColor,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+
+        // Title text
+        Text(
+            text = title,
+            fontSize = 12.5.sp,
+            fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+            color = if (selected) activeColor else inactiveColor,
+            maxLines = 1
+        )
+    }
 }
