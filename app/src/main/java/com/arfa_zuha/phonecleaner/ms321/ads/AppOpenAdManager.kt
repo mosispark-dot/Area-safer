@@ -26,7 +26,7 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
     private var currentActivity: Activity? = null
     private var isColdStart = true
 
-    private val AD_UNIT_ID = "ca-app-pub-8393457688147659/4369318908" // Real Production App Open Ad ID
+    private val AD_UNIT_ID: String get() = AdConfig.APP_OPEN_AD_UNIT_ID
 
     private val pendingWaiters = mutableListOf<(AppOpenAd?) -> Unit>()
     
@@ -46,7 +46,7 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
     }
 
     fun loadAd(context: Context) {
-        if (isLoadingAd || isAdAvailable()) {
+        if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT || isLoadingAd || isAdAvailable()) {
             return
         }
 
@@ -88,6 +88,8 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
     }
 
     fun showAdIfAvailable() {
+        if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT) return
+
         val isPremium = try { BillingHelper.getInstance(application).isPremium.value } catch (e: Exception) { false }
         val isShowingInter = AdStateManager.isShowingFullScreenAd.value
 
@@ -117,6 +119,11 @@ class AppOpenAdManager(private val application: Application) : Application.Activ
 
     fun fetchAdAndShow(activity: Activity, onComplete: () -> Unit) {
         isColdStart = false
+
+        if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT) {
+            onComplete()
+            return
+        }
 
         val isPremium = try { BillingHelper.getInstance(application).isPremium.value } catch (e: Exception) { false }
         if (isPremium || activity.isFinishing || activity.isDestroyed) {

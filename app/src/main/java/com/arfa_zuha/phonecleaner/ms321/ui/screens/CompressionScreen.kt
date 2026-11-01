@@ -7,7 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -58,198 +60,217 @@ fun CompressionScreen(
     val selectedCount = compressionState.selectedUris.size
     val estimatedSavedText = viewModel.formatBytes(compressionState.estimatedBytesSaved)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+    Surface(
+        color = Color(0xFFFAFAFC),
+        modifier = Modifier.fillMaxSize()
     ) {
-        // Header with Top Back Button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-            Spacer(modifier = Modifier.width(4.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "Media & File Compressor",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    text = "Compress Pictures, Videos & Files to free up space",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        // 4 Category Tabs (Picture, Video, Audio, Files)
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            CompressionTypeTab(
-                type = CompressionType.PICTURE,
-                icon = Icons.Default.Image,
-                isSelected = compressionState.selectedType == CompressionType.PICTURE,
-                modifier = Modifier.weight(1f),
-                onSelect = { viewModel.setCompressionType(CompressionType.PICTURE) }
-            )
-            CompressionTypeTab(
-                type = CompressionType.VIDEO,
-                icon = Icons.Default.Videocam,
-                isSelected = compressionState.selectedType == CompressionType.VIDEO,
-                modifier = Modifier.weight(1f),
-                onSelect = { viewModel.setCompressionType(CompressionType.VIDEO) }
-            )
-            CompressionTypeTab(
-                type = CompressionType.AUDIO,
-                icon = Icons.Default.Audiotrack,
-                isSelected = compressionState.selectedType == CompressionType.AUDIO,
-                modifier = Modifier.weight(1f),
-                onSelect = { viewModel.setCompressionType(CompressionType.AUDIO) }
-            )
-            CompressionTypeTab(
-                type = CompressionType.FILE,
-                icon = Icons.Default.FolderZip,
-                isSelected = compressionState.selectedType == CompressionType.FILE,
-                modifier = Modifier.weight(1f),
-                onSelect = { viewModel.setCompressionType(CompressionType.FILE) }
-            )
-        }
-
-        // Multiple File Selection Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    multipleFilePickerLauncher.launch(compressionState.selectedType.mimeType)
-                },
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (selectedCount > 0)
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                else MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
+            // Header with Top Back Button
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .statusBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Box(
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFF1F5F9),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
+                        .size(40.dp)
+                        .clickable { onBackClick() }
                 ) {
-                    val icon = when (compressionState.selectedType) {
-                        CompressionType.PICTURE -> Icons.Default.AddPhotoAlternate
-                        CompressionType.VIDEO -> Icons.Default.VideoCall
-                        CompressionType.AUDIO -> Icons.Default.AudioFile
-                        CompressionType.FILE -> Icons.Default.FileUpload
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E293B),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "Media & File Compressor",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = "Compress Pictures, Videos & Files to free up space",
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF64748B)
                     )
                 }
+            }
 
-                if (selectedCount > 0) {
-                    Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                        Text(
-                            text = "$selectedCount ${if (selectedCount == 1) "File" else "Files"} Selected",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+            // 4 Category Tabs (Picture, Video, Audio, Files)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = Color.White,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                    .padding(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                CompressionTypeTab(
+                    type = CompressionType.PICTURE,
+                    icon = Icons.Default.Image,
+                    isSelected = compressionState.selectedType == CompressionType.PICTURE,
+                    modifier = Modifier.weight(1f),
+                    onSelect = { viewModel.setCompressionType(CompressionType.PICTURE) }
+                )
+                CompressionTypeTab(
+                    type = CompressionType.VIDEO,
+                    icon = Icons.Default.Videocam,
+                    isSelected = compressionState.selectedType == CompressionType.VIDEO,
+                    modifier = Modifier.weight(1f),
+                    onSelect = { viewModel.setCompressionType(CompressionType.VIDEO) }
+                )
+                CompressionTypeTab(
+                    type = CompressionType.AUDIO,
+                    icon = Icons.Default.Audiotrack,
+                    isSelected = compressionState.selectedType == CompressionType.AUDIO,
+                    modifier = Modifier.weight(1f),
+                    onSelect = { viewModel.setCompressionType(CompressionType.AUDIO) }
+                )
+                CompressionTypeTab(
+                    type = CompressionType.FILE,
+                    icon = Icons.Default.FolderZip,
+                    isSelected = compressionState.selectedType == CompressionType.FILE,
+                    modifier = Modifier.weight(1f),
+                    onSelect = { viewModel.setCompressionType(CompressionType.FILE) }
+                )
+            }
+
+            // Multiple File Selection Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        multipleFilePickerLauncher.launch(compressionState.selectedType.mimeType)
+                    },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selectedCount > 0) Color(0xFFEFF6FF) else Color.White
+                ),
+                border = BorderStroke(1.dp, if (selectedCount > 0) Color(0xFF93C5FD) else Color(0xFFE2E8F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2563EB).copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val icon = when (compressionState.selectedType) {
+                            CompressionType.PICTURE -> Icons.Default.AddPhotoAlternate
+                            CompressionType.VIDEO -> Icons.Default.VideoCall
+                            CompressionType.AUDIO -> Icons.Default.AudioFile
+                            CompressionType.FILE -> Icons.Default.FileUpload
+                        }
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = Color(0xFF2563EB),
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 
-                    Text(
-                        text = "Total Size: ${viewModel.formatBytes(compressionState.totalSizeBytes)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Selected files chips / preview list (Max 2 shown, rest in +more)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        compressionState.fileNames.take(2).forEach { fname ->
-                            SuggestionChip(
-                                onClick = { },
-                                label = {
-                                    Text(
-                                        text = fname,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        fontSize = 11.sp
-                                    )
-                                },
-                                modifier = Modifier.padding(horizontal = 2.dp)
+                    if (selectedCount > 0) {
+                        Badge(containerColor = Color(0xFF2563EB)) {
+                            Text(
+                                text = "$selectedCount ${if (selectedCount == 1) "File" else "Files"} Selected",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
                             )
                         }
-                        if (compressionState.fileNames.size > 2) {
-                            SuggestionChip(
-                                onClick = { },
-                                label = {
-                                    Text(
-                                        text = "+${compressionState.fileNames.size - 2} more",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            )
-                        }
-                    }
 
-                    OutlinedButton(
-                        onClick = { multipleFilePickerLauncher.launch(compressionState.selectedType.mimeType) },
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Select Different / More Files")
+                        Text(
+                            text = "Total Size: ${viewModel.formatBytes(compressionState.totalSizeBytes)}",
+                            fontSize = 15.sp,
+                            color = Color(0xFF0F172A),
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        // Selected files chips / preview list (Max 2 shown, rest in +more)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            compressionState.fileNames.take(2).forEach { fname ->
+                                SuggestionChip(
+                                    onClick = { },
+                                    label = {
+                                        Text(
+                                            text = fname,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            fontSize = 11.sp
+                                        )
+                                    },
+                                    modifier = Modifier.padding(horizontal = 2.dp)
+                                )
+                            }
+                            if (compressionState.fileNames.size > 2) {
+                                SuggestionChip(
+                                    onClick = { },
+                                    label = {
+                                        Text(
+                                            text = "+${compressionState.fileNames.size - 2} more",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF2563EB)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { multipleFilePickerLauncher.launch(compressionState.selectedType.mimeType) },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Select Different / More Files")
+                        }
+                    } else {
+                        Text(
+                            text = "Tap to choose ${compressionState.selectedType.label}",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = "Select one or multiple ${compressionState.selectedType.label.lowercase()} files to compress",
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
                     }
-                } else {
-                    Text(
-                        text = "Tap to choose ${compressionState.selectedType.label}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Select one or multiple ${compressionState.selectedType.label.lowercase()} files to compress",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
-        }
 
         // Show Medium Rectangle Ad when no file is selected
         if (selectedCount == 0) {
@@ -499,6 +520,7 @@ fun CompressionScreen(
         }
     }
 }
+}
 
 @Composable
 fun CompressionTypeTab(
@@ -512,8 +534,8 @@ fun CompressionTypeTab(
         onClick = onSelect,
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+        color = if (isSelected) Color(0xFF2563EB) else Color.Transparent,
+        contentColor = if (isSelected) Color.White else Color(0xFF64748B)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 10.dp),
@@ -523,7 +545,7 @@ fun CompressionTypeTab(
             Icon(imageVector = icon, contentDescription = type.label, modifier = Modifier.size(20.dp))
             Text(
                 text = type.label,
-                style = MaterialTheme.typography.labelSmall,
+                fontSize = 11.5.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             )
         }

@@ -217,120 +217,180 @@ fun MediaCategoryScreen(
     }
 
     Scaffold(
+        containerColor = Color(0xFFFAFAFC),
         topBar = {
-            TopAppBar(
-                title = {
+            Surface(
+                color = Color.White,
+                shadowElevation = 0.5.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable {
+                                if (isMultiSelecting) {
+                                    viewModel.clearFileSelection()
+                                } else if (isSearching) {
+                                    isSearching = false
+                                    searchQuery = ""
+                                } else if (selectedFolder != null) {
+                                    viewModel.toggleViewMode()
+                                } else {
+                                    onNavigateBack()
+                                }
+                            }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isMultiSelecting) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF1E293B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
                     if (isMultiSelecting) {
                         Text(
                             text = "${selectedFileIds.size} Selected (${formatFolderBytes(selectedTotalBytes)})",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            fontSize = 15.sp,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier.weight(1f)
                         )
+                        IconButton(onClick = { viewModel.selectAllFiles(activeFiles) }) {
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select All", tint = Color(0xFF2563EB))
+                        }
                     } else if (isSearching) {
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search ${selectedFolder ?: title}...", fontSize = 12.sp) },
+                            placeholder = { Text("Search ${selectedFolder ?: title}...", fontSize = 12.sp, color = Color(0xFF94A3B8)) },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
+                                .weight(1f)
+                                .height(46.dp),
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF8FAFC),
+                                unfocusedContainerColor = Color(0xFFF8FAFC),
+                                focusedBorderColor = Color(0xFF2563EB),
+                                unfocusedBorderColor = Color(0xFFE2E8F0)
+                            )
                         )
-                    } else {
-                        Text(
-                            text = selectedFolder ?: title,
-                            fontWeight = FontWeight.ExtraBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (isMultiSelecting) {
-                            viewModel.clearFileSelection()
-                        } else if (isSearching) {
+                        IconButton(onClick = {
                             isSearching = false
                             searchQuery = ""
-                        } else if (selectedFolder != null) {
-                            viewModel.toggleViewMode()
-                        } else {
-                            onNavigateBack()
-                        }
-                    }) {
-                        Icon(
-                            imageVector = if (isMultiSelecting) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    if (isMultiSelecting) {
-                        IconButton(onClick = { viewModel.selectAllFiles(activeFiles) }) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Select All")
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close Search", tint = Color(0xFF64748B))
                         }
                     } else {
-                        // Search Action Button
-                        IconButton(onClick = {
-                            isSearching = !isSearching
-                            if (!isSearching) searchQuery = ""
-                        }) {
-                            Icon(
-                                imageVector = if (isSearching) Icons.Default.Close else Icons.Default.Search,
-                                contentDescription = "Search"
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = selectedFolder ?: title,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 18.sp,
+                                color = Color(0xFF0F172A),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "${activeFiles.size} items",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF64748B)
                             )
                         }
 
-                        // Grid / List View Toggle Switch Button
-                        IconButton(onClick = { isListView = !isListView }) {
-                            Icon(
-                                imageVector = if (isListView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
-                                contentDescription = "Toggle Grid/List View"
-                            )
+                        // Search Icon
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { isSearching = true }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF475569), modifier = Modifier.size(18.dp))
+                            }
+                        }
+
+                        // Grid / List Toggle
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { isListView = !isListView }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = if (isListView) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
+                                    contentDescription = "Toggle Grid/List View",
+                                    tint = Color(0xFF475569),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
 
                         // Album / All Files Toggle
                         if (currentMediaType in listOf(MediaType.IMAGE, MediaType.VIDEO, MediaType.AUDIO) && selectedFolder == null) {
-                            TextButton(onClick = { viewModel.toggleViewMode() }) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFEFF6FF),
+                                border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                                modifier = Modifier.clickable { viewModel.toggleViewMode() }
+                            ) {
                                 Text(
-                                    text = if (isFolderView) "All $title" else "Albums",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
+                                    text = if (isFolderView) "All" else "Albums",
+                                    color = Color(0xFF2563EB),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isMultiSelecting) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                )
-            )
+                }
+            }
         },
         bottomBar = {
             if (isMultiSelecting) {
                 Surface(
-                    tonalElevation = 8.dp,
+                    color = Color.White,
                     shadowElevation = 8.dp,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .padding(14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
                             onClick = { viewModel.shareMultipleFiles(selectedFiles) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(18.dp), tint = Color(0xFF334155))
                             Spacer(Modifier.width(6.dp))
-                            Text("Share (${selectedFileIds.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Share (${selectedFileIds.size})", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                         }
 
                         Button(
@@ -338,12 +398,12 @@ fun MediaCategoryScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Delete (${selectedFileIds.size})", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Delete (${selectedFileIds.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
                         }
                     }
                 }
@@ -484,11 +544,12 @@ fun MediaList(
                         onClick = { onFileClick(file) },
                         onLongClick = { onFileLongClick(file) }
                     ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                    containerColor = if (isSelected) Color(0xFFEFF6FF) else Color.White
                 ),
-                border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                border = BorderStroke(1.dp, if (isSelected) Color(0xFF2563EB) else Color(0xFFE2E8F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -871,12 +932,14 @@ fun FolderList(folders: List<MediaFolder>, onFolderClick: (String) -> Unit, imag
         modifier = Modifier.fillMaxSize()
     ) {
         items(folders) { folder ->
-            ElevatedCard(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onFolderClick(folder.folderName) },
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
             ) {
                 Row(
                     modifier = Modifier

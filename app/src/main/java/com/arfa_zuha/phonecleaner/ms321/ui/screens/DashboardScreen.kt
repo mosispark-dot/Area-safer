@@ -56,7 +56,8 @@ fun DashboardScreen(
     onNavigateToAppUsage: () -> Unit = {},
     onNavigateToFileManager: () -> Unit = {},
     onNavigateToMediaCategory: (MediaType) -> Unit = {},
-    onNavigateToPaywall: () -> Unit = {}
+    onNavigateToPaywall: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     val storage = uiState.storageInfo
 
@@ -97,10 +98,10 @@ fun DashboardScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Clean Top Header with Branding Logo + VIP PRO Button
+        // Clean Top Header with Hamburger Menu + Branding Logo + VIP PRO Button
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -110,11 +111,29 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Left Navigation Drawer Menu Toggle
+                Surface(
+                    onClick = onOpenDrawer,
+                    shape = CircleShape,
+                    color = Color(0xFFF1F5F9),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Open Navigation Menu",
+                            tint = Color(0xFF334155),
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                }
+
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .border(1.5.dp, Color(0xFF10B981), CircleShape),
+                        .border(1.2.dp, Color(0xFF10B981), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
@@ -127,15 +146,15 @@ fun DashboardScreen(
                 Column {
                     Text(
                         text = "Phone Cleaner",
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color(0xFF0F172A)
                     )
                     Text(
                         text = "Storage & Memory Optimizer",
-                        fontSize = 11.5.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF6B7280)
+                        color = Color(0xFF64748B)
                     )
                 }
             }
@@ -152,8 +171,8 @@ fun DashboardScreen(
             Box(
                 modifier = Modifier
                     .graphicsLayer { scaleX = proScale; scaleY = proScale }
-                    .size(40.dp)
-                    .shadow(elevation = 3.dp, shape = CircleShape, spotColor = Color(0xFFFFB300))
+                    .size(38.dp)
+                    .shadow(elevation = 2.dp, shape = CircleShape, spotColor = Color(0xFFFFB300))
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -175,34 +194,33 @@ fun DashboardScreen(
                     imageVector = Icons.Default.WorkspacePremium,
                     contentDescription = "VIP Premium",
                     tint = Color(0xFF261C02),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(21.dp)
                 )
             }
         }
 
-        // Top Banner Ad
+        // Top Banner Ad (Using AdConfig testing/production AdMob ID)
         com.arfa_zuha.phonecleaner.ms321.ads.NativeBannerAd()
 
-        // Smart Clean Hero Animation Widget Matching Reference Video (No Box Border, Pure Floating Glowing Arcs)
+        // Smart Clean Hero Animation Widget (Smart, Compact & Decent)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Central Animated Dial with Orbiting Glowing Arcs (Exact Match to Reference Video)
+            // Central Animated Dial with Orbiting Glowing Arcs (Compact & Balanced)
             Box(
-                modifier = Modifier.size(190.dp),
+                modifier = Modifier.size(150.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // 1. Primary Glowing Arc Rotating Clockwise (No rigid border lines)
+                // 1. Primary Glowing Arc Rotating Clockwise
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(4.dp)
+                        .padding(3.dp)
                         .rotate(orbitRotation)
                 ) {
-                    // Radiant cyan-to-emerald sweeping glowing neon arc
                     drawArc(
                         brush = Brush.sweepGradient(
                             colors = listOf(
@@ -216,7 +234,7 @@ fun DashboardScreen(
                         startAngle = 0f,
                         sweepAngle = 145f,
                         useCenter = false,
-                        style = Stroke(width = 4.5.dp.toPx(), cap = StrokeCap.Round)
+                        style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
                     )
                 }
 
@@ -224,7 +242,7 @@ fun DashboardScreen(
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(14.dp)
+                        .padding(10.dp)
                         .rotate(counterOrbitRotation)
                 ) {
                     drawArc(
@@ -240,14 +258,14 @@ fun DashboardScreen(
                         startAngle = 180f,
                         sweepAngle = 110f,
                         useCenter = false,
-                        style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
+                        style = Stroke(width = 2.8.dp.toPx(), cap = StrokeCap.Round)
                     )
                 }
 
-                // 3. Central Clean Light Core Circle (Completely borderless, soft luminous gradient)
+                // 3. Central Clean Light Core Circle
                 Box(
                     modifier = Modifier
-                        .size(142.dp)
+                        .size(114.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.radialGradient(
@@ -266,15 +284,15 @@ fun DashboardScreen(
                     ) {
                         Text(
                             text = "Junk Files",
-                            fontSize = 19.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A),
-                            letterSpacing = 0.3.sp
+                            letterSpacing = 0.2.sp
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Inner Clean Button (Light Surface with Soft Emerald Accent)
+                        // Inner Clean Button (Smart, compact & handsome)
                         val cleanInteraction = remember { MutableInteractionSource() }
                         val isCleanPressed by cleanInteraction.collectIsPressedAsState()
                         val cleanScale by animateFloatAsState(
@@ -286,13 +304,13 @@ fun DashboardScreen(
                         Surface(
                             onClick = onNavigateToCleaner,
                             interactionSource = cleanInteraction,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             color = Color.White,
-                            shadowElevation = 2.dp,
-                            border = BorderStroke(1.2.dp, Color(0xFF10B981).copy(alpha = 0.55f)),
+                            shadowElevation = 1.5.dp,
+                            border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.6f)),
                             modifier = Modifier
-                                .width(94.dp)
-                                .height(32.dp)
+                                .width(88.dp)
+                                .height(30.dp)
                                 .graphicsLayer { scaleX = cleanScale; scaleY = cleanScale }
                         ) {
                             Box(
@@ -301,10 +319,10 @@ fun DashboardScreen(
                             ) {
                                 Text(
                                     text = "Clean",
-                                    fontSize = 13.sp,
+                                    fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF10B981),
-                                    letterSpacing = 0.3.sp
+                                    letterSpacing = 0.2.sp
                                 )
                             }
                         }
@@ -313,7 +331,7 @@ fun DashboardScreen(
             }
         }
 
-        // Medium Rectangle Ad with Professional Card Boundaries
+        // Medium Rectangle Ad with Professional Card Boundaries (Using AdConfig testing/production AdMob ID)
         com.arfa_zuha.phonecleaner.ms321.ads.MediumRectangleAd(
             modifier = Modifier
                 .fillMaxWidth()
@@ -336,19 +354,19 @@ fun DashboardScreen(
         // Section 1: Cleaner & Optimizer Tools
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = "Cleaner & Performance Tools",
-                fontSize = 14.5.sp,
+                fontSize = 13.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937)
+                color = Color(0xFF0F172A)
             )
 
             // Row 1: Junk Cleaner & Duplicate Files
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InteractiveFeatureCard(
                     modifier = Modifier.weight(1f),
@@ -370,7 +388,7 @@ fun DashboardScreen(
             // Row 2: Photo/Media Compressor & Battery Info
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InteractiveFeatureCard(
                     modifier = Modifier.weight(1f),
@@ -393,19 +411,19 @@ fun DashboardScreen(
         // Section 2: Management & Storage Tools
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = "Management & Storage",
-                fontSize = 14.5.sp,
+                fontSize = 13.5.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937)
+                color = Color(0xFF0F172A)
             )
 
             // Row 3: App Usage & File Manager
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InteractiveFeatureCard(
                     modifier = Modifier.weight(1f),
@@ -427,7 +445,7 @@ fun DashboardScreen(
             // Row 4: APK Uninstaller & Unused Apps
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 InteractiveFeatureCard(
                     modifier = Modifier.weight(1f),
@@ -449,19 +467,18 @@ fun DashboardScreen(
 
         // Section 3: Storage Breakdown in ONE Unified Light Color
         if (storage != null) {
-            // Unified completely soft light blue for breakdown categories
             val unifiedLightColor = Color(0xFF60A5FA) // Completely light pastel blue
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
-                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -470,15 +487,15 @@ fun DashboardScreen(
                     ) {
                         Text(
                             text = "Storage Breakdown",
-                            fontSize = 14.5.sp,
+                            fontSize = 13.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1F2937)
+                            color = Color(0xFF0F172A)
                         )
                         Icon(
                             imageVector = Icons.Default.DonutLarge,
                             contentDescription = null,
                             tint = unifiedLightColor,
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -565,9 +582,9 @@ fun InteractiveFeatureCard(
                 scaleY = scale
             },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, pressedElevation = 0.dp),
-        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp, pressedElevation = 0.dp),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column(
             modifier = Modifier
@@ -576,31 +593,30 @@ fun InteractiveFeatureCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Centered Soft Pastel Squircle Badge with Crisp Colored Icon
+            // Centered Soft Pastel Circle Pod with Crisp Colored Icon
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(accentColor.copy(alpha = 0.10f))
-                    .border(1.dp, accentColor.copy(alpha = 0.22f), RoundedCornerShape(14.dp)),
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
                     tint = accentColor,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Centered Bold Title
+            // Centered Title
             Text(
                 text = title,
-                fontSize = 13.5.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937),
+                color = Color(0xFF0F172A),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -611,9 +627,9 @@ fun InteractiveFeatureCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    fontSize = 10.5.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF6B7280),
+                    color = Color(0xFF64748B),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -699,10 +715,10 @@ fun CategoryProgressRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
-            .padding(vertical = 3.dp, horizontal = 2.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+            .padding(vertical = 2.dp, horizontal = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -715,34 +731,34 @@ fun CategoryProgressRow(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(accentColor.copy(alpha = 0.10f)),
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
                 Text(
                     text = label,
-                    fontSize = 13.5.sp,
+                    fontSize = 12.5.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1F2937)
+                    color = Color(0xFF1E293B)
                 )
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = "View Section",
-                    tint = Color(0xFF9CA3AF),
-                    modifier = Modifier.size(16.dp)
+                    tint = Color(0xFF94A3B8),
+                    modifier = Modifier.size(15.dp)
                 )
             }
             Text(
                 text = size,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = accentColor
             )
@@ -751,8 +767,8 @@ fun CategoryProgressRow(
             progress = { fraction },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(7.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .height(5.dp)
+                .clip(RoundedCornerShape(3.dp)),
             color = accentColor,
             trackColor = accentColor.copy(alpha = 0.12f)
         )

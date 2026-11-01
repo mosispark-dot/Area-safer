@@ -51,14 +51,19 @@ import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.google.android.gms.ads.nativead.NativeAdView
 
-// Real Production AdMob Ad Unit IDs
-const val BANNER_AD_UNIT_ID = "ca-app-pub-8393457688147659/4069936000"
-const val NATIVE_ADVANCE_AD_UNIT_ID = "ca-app-pub-8393457688147659/5682400578"
+// AdMob Ad Unit IDs from centralized AdConfig (Test vs Production)
+val BANNER_AD_UNIT_ID: String get() = AdConfig.BANNER_AD_UNIT_ID
+val NATIVE_ADVANCE_AD_UNIT_ID: String get() = AdConfig.NATIVE_ADVANCE_AD_UNIT_ID
 
 @Composable
 fun NativeBannerAd(
     modifier: Modifier = Modifier
 ) {
+    // TEMPORARILY COMMENTED OUT FOR DESIGN PHASE - UNCOMMENT WHEN DESIGN IS COMPLETE
+    if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT) {
+        return
+    }
+
     val context = LocalContext.current
     val billingHelper = remember(context) {
         try {
@@ -134,6 +139,11 @@ fun NativeBannerAd(
 fun MediumRectangleAd(
     modifier: Modifier = Modifier
 ) {
+    // TEMPORARILY COMMENTED OUT FOR DESIGN PHASE - UNCOMMENT WHEN DESIGN IS COMPLETE
+    if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT) {
+        return
+    }
+
     val context = LocalContext.current
     val billingHelper = remember(context) {
         try {
@@ -181,7 +191,7 @@ fun MediumRectangleAd(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 10.dp),
+                .padding(top = 8.dp, bottom = 4.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             AndroidView(
@@ -214,53 +224,53 @@ fun MediumRectangleAd(
                         )
                     }
 
-                    // 1. Top "Advertisement" Pill Badge (matching App Open native style)
+                    // 1. Top "Advertisement" Pill Badge (Compact margin, zero empty space)
                     val adBadge = TextView(ctx).apply {
                         text = "Advertisement"
                         textSize = 9.5f
                         setTextColor(Color.WHITE)
                         setTypeface(null, Typeface.BOLD)
-                        setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(3))
+                        setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2.5f.toInt()))
                         background = GradientDrawable().apply {
                             cornerRadius = dpToPx(10).toFloat()
-                            setColor(Color.parseColor("#8E8E93")) // Clean Gray Pill Badge
+                            setColor(Color.parseColor("#8E8E93"))
                         }
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            bottomMargin = dpToPx(8)
+                            bottomMargin = dpToPx(3) // Tightly connected, no empty gap
                         }
                     }
                     rootLayout.addView(adBadge)
 
-                    // 2. Large Bold Headline
+                    // 2. Bold Headline
                     val adHeadline = TextView(ctx).apply {
-                        textSize = 18f
+                        textSize = 16.5f
                         setTypeface(null, Typeface.BOLD)
-                        maxLines = 2
+                        maxLines = 1
                         ellipsize = TextUtils.TruncateAt.END
                         setTextColor(Color.parseColor("#1F2937"))
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            bottomMargin = dpToPx(4)
+                            bottomMargin = dpToPx(2)
                         }
                     }
                     rootLayout.addView(adHeadline)
 
                     // 3. Subtitle / Advertiser / Body
                     val adBody = TextView(ctx).apply {
-                        textSize = 13f
-                        maxLines = 2
+                        textSize = 12.5f
+                        maxLines = 1
                         ellipsize = TextUtils.TruncateAt.END
                         setTextColor(Color.parseColor("#6B7280"))
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            bottomMargin = dpToPx(10)
+                            bottomMargin = dpToPx(6)
                         }
                     }
                     rootLayout.addView(adBody)
@@ -276,9 +286,9 @@ fun MediumRectangleAd(
                     val adMediaView = MediaView(ctx).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
-                            dpToPx(180)
+                            dpToPx(170)
                         ).apply {
-                            bottomMargin = dpToPx(12)
+                            bottomMargin = dpToPx(4) // Snug next to button
                         }
                         clipToOutline = true
                         outlineProvider = object : ViewOutlineProvider() {

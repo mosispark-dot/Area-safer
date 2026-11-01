@@ -2,18 +2,24 @@ package com.arfa_zuha.phonecleaner.ms321.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,24 +35,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.arfa_zuha.phonecleaner.ms321.R
 
 data class OnboardingPageData(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val badgeText: String,
-    val drawableRes: Int? = null
+    val badgeTag: String,
+    val highlightChip: String,
+    val primaryColor: Color,
+    val secondaryColor: Color,
+    val lightBgColor: Color
 )
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -58,252 +68,401 @@ fun OnboardingScreen(
 
     val pages = listOf(
         OnboardingPageData(
-            title = "Storage Cleaner",
-            description = "Scan and clear junk files, temporary app cache, and leftover data to free up storage space.",
+            title = "Deep Storage Clean",
+            description = "Effortlessly scan and clear junk files, app cache, and residual system data to speed up your phone.",
             icon = Icons.Default.CleaningServices,
-            badgeText = "🧹 Junk File Cleaner",
-            drawableRes = R.drawable.ai_cleaner_icon
+            badgeTag = "🧹 Smart Junk Cleaner",
+            highlightChip = "100% Safe Clean",
+            primaryColor = Color(0xFF10B981), // Emerald
+            secondaryColor = Color(0xFF38BDF8), // Light Cyan
+            lightBgColor = Color(0xFFF0FDF4)
         ),
         OnboardingPageData(
-            title = "Media Compression",
-            description = "Compress large photos, videos, and audio files without losing quality to reclaim valuable storage space.",
+            title = "Photo & Video Compression",
+            description = "Reduce large media files without losing visual clarity to reclaim gigabytes of valuable storage.",
             icon = Icons.Default.FolderZip,
-            badgeText = "🗜️ Media Compressor"
+            badgeTag = "🗜️ Lossless Compressor",
+            highlightChip = "Save Up to 80% Space",
+            primaryColor = Color(0xFF3B82F6), // Vibrant Blue
+            secondaryColor = Color(0xFF6366F1), // Indigo
+            lightBgColor = Color(0xFFEFF6FF)
         ),
         OnboardingPageData(
             title = "Detect Unused Apps",
-            description = "Easily discover applications and games you haven't opened in months and uninstall unwanted apps in one place.",
+            description = "Easily find hidden, heavy applications you haven't opened in months and batch uninstall in one tap.",
             icon = Icons.Default.PhoneAndroid,
-            badgeText = "📱 Unused Apps Manager"
+            badgeTag = "📱 App Insights",
+            highlightChip = "Batch Uninstall",
+            primaryColor = Color(0xFF8B5CF6), // Purple
+            secondaryColor = Color(0xFF06B6D4), // Cyan
+            lightBgColor = Color(0xFFF5F3FF)
         ),
         OnboardingPageData(
-            title = "File & Duplicate Cleaner",
-            description = "Browse files by category and safely delete duplicate photos, videos, and clone files to recover space.",
+            title = "Duplicate & File Manager",
+            description = "Identify identical photos, duplicate videos, and large archives to free up disk space with zero hassle.",
             icon = Icons.Default.CopyAll,
-            badgeText = "📁 Duplicate Cleaner"
+            badgeTag = "📁 Duplicate Finder",
+            highlightChip = "Smart Auto-Select",
+            primaryColor = Color(0xFF10B981), // Emerald
+            secondaryColor = Color(0xFF3B82F6), // Blue
+            lightBgColor = Color(0xFFECFDF5)
         )
+    )
+
+    // Infinite rotating transition matching the Dashboard hero animation
+    val infiniteTransition = rememberInfiniteTransition(label = "OnboardingOrbit")
+    val orbitRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween( durationMillis = 6500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "orbitRotation"
+    )
+    val counterOrbitRotation by infiniteTransition.animateFloat(
+        initialValue = 360f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "counterOrbitRotation"
     )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color(0xFFFAFAFC) // Clean light modern background matching Dashboard
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                            MaterialTheme.colorScheme.background
-                        )
-                    )
-                )
+                .systemBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            // 1. Top Header Row with Modern Skip Capsule
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .systemBarsPadding()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Top Header Row with Skip Button
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF10B981))
+                    )
                     Text(
                         text = "Phone Cleaner",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
                     )
-
-                    if (currentPage < pages.size - 1) {
-                        TextButton(
-                            onClick = onOnboardingFinished,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "Skip",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.width(48.dp))
-                    }
                 }
 
-                // Middle Content Slide with Slide + Fade Transition
-                AnimatedContent(
-                    targetState = currentPage,
-                    transitionSpec = {
-                        if (targetState > initialState) {
-                            (slideInHorizontally { width -> width } + fadeIn(tween(300))) togetherWith
-                                    (slideOutHorizontally { width -> -width } + fadeOut(tween(300)))
-                        } else {
-                            (slideInHorizontally { width -> -width } + fadeIn(tween(300))) togetherWith
-                                    (slideOutHorizontally { width -> width } + fadeOut(tween(300)))
-                        }
-                    },
-                    label = "OnboardingTransition",
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                ) { pageIndex ->
-                    val page = pages[pageIndex]
-                    val heroScale = remember(pageIndex) { Animatable(0.6f) }
-
-                    LaunchedEffect(pageIndex) {
-                        heroScale.animateTo(
-                            targetValue = 1.05f,
-                            animationSpec = tween(350, easing = FastOutSlowInEasing)
-                        )
-                        heroScale.animateTo(
-                            targetValue = 1.0f,
-                            animationSpec = tween(150)
+                if (currentPage < pages.size - 1) {
+                    Surface(
+                        onClick = onOnboardingFinished,
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFF1F5F9),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Text(
+                            text = "Skip",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF475569),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                         )
                     }
+                } else {
+                    Spacer(modifier = Modifier.width(48.dp))
+                }
+            }
 
-                    Column(
+            // 2. Middle Slide with Floating Luminous Arcs & Content
+            AnimatedContent(
+                targetState = currentPage,
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        (slideInHorizontally { width -> (width * 0.8f).toInt() } + fadeIn(tween(250))) togetherWith
+                                (slideOutHorizontally { width -> -(width * 0.8f).toInt() } + fadeOut(tween(250)))
+                    } else {
+                        (slideInHorizontally { width -> -(width * 0.8f).toInt() } + fadeIn(tween(250))) togetherWith
+                                (slideOutHorizontally { width -> (width * 0.8f).toInt() } + fadeOut(tween(250)))
+                    }
+                },
+                label = "OnboardingSlide",
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) { pageIndex ->
+                val page = pages[pageIndex]
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Floating Animated Hero Visual (Exact style match to Dashboard Hero)
+                    Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                            .size(200.dp)
+                            .padding(bottom = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // Animated Hero Visual Badge
+                        // Outer Clockwise Luminous Arc
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(4.dp)
+                                .rotate(orbitRotation)
+                        ) {
+                            drawArc(
+                                brush = Brush.sweepGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        page.secondaryColor.copy(alpha = 0.25f),
+                                        page.secondaryColor,
+                                        page.primaryColor,
+                                        Color.Transparent
+                                    )
+                                ),
+                                startAngle = 0f,
+                                sweepAngle = 140f,
+                                useCenter = false,
+                                style = Stroke(width = 4.5.dp.toPx(), cap = StrokeCap.Round)
+                            )
+                        }
+
+                        // Inner Counter-Clockwise Complementary Arc
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp)
+                                .rotate(counterOrbitRotation)
+                        ) {
+                            drawArc(
+                                brush = Brush.sweepGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        page.primaryColor.copy(alpha = 0.2f),
+                                        page.primaryColor,
+                                        page.secondaryColor,
+                                        Color.Transparent
+                                    )
+                                ),
+                                startAngle = 180f,
+                                sweepAngle = 110f,
+                                useCenter = false,
+                                style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
+                            )
+                        }
+
+                        // Central Floating Clean Card
                         Box(
                             modifier = Modifier
-                                .scale(heroScale.value)
-                                .size(150.dp)
+                                .size(136.dp)
+                                .shadow(8.dp, CircleShape, spotColor = page.primaryColor.copy(alpha = 0.2f))
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
-                                .border(4.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                .padding(8.dp),
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            Color.White,
+                                            page.lightBgColor.copy(alpha = 0.9f)
+                                        )
+                                    )
+                                )
+                                .border(1.dp, Color(0xFFE2E8F0), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (page.drawableRes != null) {
-                                Image(
-                                    painter = painterResource(id = page.drawableRes),
-                                    contentDescription = page.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = page.icon,
-                                    contentDescription = page.title,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(72.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(28.dp))
-
-                        // Category Badge Tag
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = page.badgeText,
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            Icon(
+                                imageVector = page.icon,
+                                contentDescription = page.title,
+                                tint = page.primaryColor,
+                                modifier = Modifier.size(56.dp)
                             )
                         }
+                    }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                        // Title Text
+                    // Feature Tag Badge
+                    Surface(
+                        color = page.lightBgColor,
+                        shape = RoundedCornerShape(20.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, page.primaryColor.copy(alpha = 0.25f))
+                    ) {
                         Text(
-                            text = page.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground
+                            text = page.badgeTag,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = page.primaryColor,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                        // Description Text
+                    // Title Text
+                    Text(
+                        text = page.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF0F172A)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Description Text
+                    Text(
+                        text = page.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp,
+                        color = Color(0xFF64748B),
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Subtle Highlight Chip (e.g. "100% Safe Clean")
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    ) {
                         Text(
-                            text = page.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                            text = "✓ ${page.highlightChip}",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF334155),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Banner Ad on Onboarding (Uses AdConfig Testing/Production AdMob ID)
+            com.arfa_zuha.phonecleaner.ms321.ads.NativeBannerAd(
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            // 3. Bottom Navigation & Smart Handsome Action Section
+            val isLastPage = currentPage == pages.size - 1
+            val nextInteraction = remember { MutableInteractionSource() }
+            val isNextPressed by nextInteraction.collectIsPressedAsState()
+            val buttonScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isNextPressed) 0.94f else 1.0f,
+                animationSpec = tween(120),
+                label = "buttonScale"
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Smooth Animated Page Indicator Dots
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    for (i in pages.indices) {
+                        val isSelected = i == currentPage
+                        val dotWidth by animateDpAsState(
+                            targetValue = if (isSelected) 28.dp else 8.dp,
+                            animationSpec = tween(300, easing = FastOutSlowInEasing),
+                            label = "dotWidth"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .height(8.dp)
+                                .width(dotWidth)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)
+                                )
                         )
                     }
                 }
 
-                // Bottom Navigation & Controls Section
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                // Smart Handsome Action Capsule Button
+                Surface(
+                    onClick = {
+                        if (!isLastPage) {
+                            currentPage++
+                        } else {
+                            onOnboardingFinished()
+                        }
+                    },
+                    interactionSource = nextInteraction,
+                    shape = RoundedCornerShape(26.dp),
+                    shadowElevation = 8.dp,
+                    color = Color.Transparent,
+                    modifier = Modifier
+                        .scale(buttonScale)
+                        .height(52.dp)
                 ) {
-                    // Smooth Animated Page Indicator Dots
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Brush.horizontalGradient(
+                                    if (isLastPage) listOf(Color(0xFF10B981), Color(0xFF059669))
+                                    else listOf(Color(0xFF2563EB), Color(0xFF3B82F6))
+                                )
+                            )
+                            .padding(
+                                start = if (isLastPage) 22.dp else 18.dp,
+                                end = if (isLastPage) 16.dp else 14.dp,
+                                top = 10.dp,
+                                bottom = 10.dp
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        for (i in pages.indices) {
-                            val isSelected = i == currentPage
-                            val dotWidth by animateDpAsState(
-                                targetValue = if (isSelected) 28.dp else 8.dp,
-                                animationSpec = tween(300),
-                                label = "dotWidth"
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text(
+                                text = if (isLastPage) "Get Started" else "Next",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 15.sp
                             )
                             Box(
                                 modifier = Modifier
-                                    .height(8.dp)
-                                    .width(dotWidth)
+                                    .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(
-                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
-                                    )
-                            )
-                        }
-                    }
-
-                    // Primary Action Button (Next / Get Started)
-                    Button(
-                        onClick = {
-                            if (currentPage < pages.size - 1) {
-                                currentPage++
-                            } else {
-                                onOnboardingFinished()
+                                    .background(Color.White.copy(alpha = 0.22f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isLastPage) {
+                                        Icons.Default.RocketLaunch
+                                    } else {
+                                        Icons.AutoMirrored.Filled.ArrowForward
+                                    },
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(17.dp)
+                                )
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text(
-                            text = if (currentPage < pages.size - 1) "Next" else "Get Started",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = if (currentPage < pages.size - 1) Icons.AutoMirrored.Filled.ArrowForward else Icons.Default.RocketLaunch,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        }
                     }
                 }
             }

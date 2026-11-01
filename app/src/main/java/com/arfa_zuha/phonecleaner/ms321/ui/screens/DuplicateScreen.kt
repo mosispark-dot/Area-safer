@@ -157,31 +157,60 @@ fun DuplicateScreen(
     }
 
     Scaffold(
+        containerColor = Color(0xFFFAFAFC),
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
+            Surface(
+                color = Color.White,
+                shadowElevation = 0.5.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable {
+                                if (currentCategory != null) {
+                                    viewModel.resetCategory()
+                                } else {
+                                    onBackClick()
+                                }
+                            }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color(0xFF1E293B),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
                         val mainTitle = if (currentCategory == null) "Duplicate Files Finder" else "${currentCategory!!.label} Duplicates"
                         val subTitle = if (currentCategory == null) "Find & remove exact duplicate media clones" else "Review side-by-side & delete clone copies"
-                        Text(text = mainTitle, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                        Text(text = subTitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = mainTitle,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = subTitle,
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF64748B)
+                        )
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (currentCategory != null) {
-                            viewModel.resetCategory()
-                        } else {
-                            onBackClick()
-                        }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
+                }
+            }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
@@ -232,33 +261,42 @@ fun DuplicateCategories(onCategoryClick: (FileCategory) -> Unit) {
         if (!isAllFilesPermissionGranted) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+                border = BorderStroke(1.dp, Color(0xFFFDE68A))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.FolderSpecial,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFEF3C7)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FolderSpecial,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Enable Full Storage Access",
-                            style = MaterialTheme.typography.titleSmall,
+                            fontSize = 13.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                            color = Color(0xFF92400E)
                         )
                         Text(
                             text = "Grant permission to scan all hidden duplicates on device",
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                            fontSize = 11.sp,
+                            color = Color(0xFFB45309)
                         )
                     }
                     Button(
@@ -276,9 +314,10 @@ fun DuplicateCategories(onCategoryClick: (FileCategory) -> Unit) {
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text("Grant", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Grant", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -287,40 +326,43 @@ fun DuplicateCategories(onCategoryClick: (FileCategory) -> Unit) {
         // Hero Scan Banner Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(18.dp),
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(Color(0xFF2563EB).copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.CopyAll,
                         contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
+                        tint = Color(0xFF2563EB),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Smart Duplicate Cleaner",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
                     )
                     Text(
                         text = "Scan media categories to find duplicate photos, videos & docs",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF64748B)
                     )
                 }
             }
@@ -328,8 +370,10 @@ fun DuplicateCategories(onCategoryClick: (FileCategory) -> Unit) {
 
         Text(
             text = "Select Media Category to Scan",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold
+            fontSize = 13.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A),
+            modifier = Modifier.padding(top = 4.dp)
         )
 
         CategoryCard(
@@ -371,12 +415,14 @@ fun CategoryCard(
     color: Color,
     onClick: () -> Unit
 ) {
-    ElevatedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -387,21 +433,31 @@ fun CategoryCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(42.dp)
                     .clip(CircleShape)
-                    .background(color.copy(alpha = 0.15f)),
+                    .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(24.dp))
+                Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(22.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = title,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF64748B)
+                )
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Scan",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = Color(0xFF94A3B8),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -425,13 +481,14 @@ fun DuplicateResultsView(
     val totalSelectedBytes = remember(selectedCloneFiles) { selectedCloneFiles.sumOf { it.size } }
 
     if (isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFAFAFC)), contentAlignment = Alignment.Center) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
@@ -439,26 +496,27 @@ fun DuplicateResultsView(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(100.dp)) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(96.dp)) {
                         CircularProgressIndicator(
                             progress = { scanProgressPercent / 100f },
                             modifier = Modifier.fillMaxSize(),
-                            strokeWidth = 10.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.primaryContainer
+                            strokeWidth = 8.dp,
+                            color = Color(0xFF2563EB),
+                            trackColor = Color(0xFFEFF6FF)
                         )
                         Text(
                             text = "$scanProgressPercent%",
-                            style = MaterialTheme.typography.titleLarge,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary
+                            color = Color(0xFF0F172A)
                         )
                     }
 
                     Text(
                         text = scanPhaseMessage.ifEmpty { "Scanning storage for duplicates..." },
-                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A),
                         textAlign = TextAlign.Center
                     )
 
@@ -466,57 +524,62 @@ fun DuplicateResultsView(
                         progress = { scanProgressPercent / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.primaryContainer
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = Color(0xFF2563EB),
+                        trackColor = Color(0xFFEFF6FF)
                     )
 
                     Text(
                         text = "Analyzing MD5 signatures & storage files...",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF64748B),
                         textAlign = TextAlign.Center
                     )
                 }
             }
         }
     } else if (rawGroups.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No Duplicates Found!", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFAFAFC)), contentAlignment = Alignment.Center) {
+            Text("No Duplicates Found!", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
         }
     } else {
-        Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFAFAFC))) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // Keep Best Shots Banner
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFEFF2F9))
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    color = Color.White,
+                    shadowElevation = 0.5.dp,
+                    border = BorderStroke(0.5.dp, Color(0xFFE2E8F0))
                 ) {
-                    Text(
-                        text = "Keep Best Shots (${rawGroups.size} Groups)",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6B7280)
-                    )
-                    Checkbox(
-                        checked = selectedCloneFiles.size == allDuplicateFiles.size - rawGroups.size,
-                        onCheckedChange = { viewModel.selectAllDuplicates(it) },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = Color(0xFF6B7280),
-                            uncheckedColor = Color(0xFF6B7280),
-                            checkmarkColor = Color.White
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Keep Best Shots (${rawGroups.size} Groups)",
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
                         )
-                    )
+                        Checkbox(
+                            checked = selectedCloneFiles.size == allDuplicateFiles.size - rawGroups.size,
+                            onCheckedChange = { viewModel.selectAllDuplicates(it) },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFF2563EB),
+                                uncheckedColor = Color(0xFF94A3B8),
+                                checkmarkColor = Color.White
+                            )
+                        )
+                    }
                 }
 
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 70.dp)
+                    contentPadding = PaddingValues(bottom = 76.dp)
                 ) {
                     items(rawGroups) { group ->
                         DuplicateGroupCard(
@@ -529,56 +592,64 @@ fun DuplicateResultsView(
             }
 
             // Bottom Action Bar: Share & Delete Buttons
-            Row(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
                     .align(Alignment.BottomCenter),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                color = Color.White,
+                shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
             ) {
-                // Share Button
-                OutlinedButton(
-                    onClick = { viewModel.shareSelectedFiles(context) },
-                    enabled = selectedCloneFiles.isNotEmpty(),
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(20.dp), tint = Color(0xFF374151))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Share", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF374151))
-                }
+                    // Share Button
+                    OutlinedButton(
+                        onClick = { viewModel.shareSelectedFiles(context) },
+                        enabled = selectedCloneFiles.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(18.dp), tint = Color(0xFF334155))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Share", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF334155))
+                    }
 
-                // Delete Button
-                Button(
-                    onClick = {
-                        viewModel.deleteSelectedFiles {
-                            currentActivity?.let { act ->
-                                InterstitialAdHelper.showAd(act) {}
+                    // Delete Button
+                    Button(
+                        onClick = {
+                            viewModel.deleteSelectedFiles {
+                                currentActivity?.let { act ->
+                                    InterstitialAdHelper.showAd(act) {}
+                                }
                             }
-                        }
-                    },
-                    enabled = selectedCloneFiles.isNotEmpty(),
-                    modifier = Modifier
-                        .weight(2f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFEF4444), // Smart Modern Red
-                        disabledContainerColor = Color(0xFFFCA5A5)
-                    )
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Delete (${selectedCloneFiles.size})",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                        },
+                        enabled = selectedCloneFiles.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(2f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFEF4444),
+                            disabledContainerColor = Color(0xFFFCA5A5)
+                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Delete (${selectedCloneFiles.size})",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }

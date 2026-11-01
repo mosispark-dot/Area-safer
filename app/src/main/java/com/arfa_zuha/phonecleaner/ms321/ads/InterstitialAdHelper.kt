@@ -17,12 +17,12 @@ object InterstitialAdHelper {
     private var interstitialAd: InterstitialAd? = null
     private var isLoading = false
     
-    private const val AD_UNIT_ID = "ca-app-pub-8393457688147659/5382269245" // Real Production Interstitial Ad ID
+    private val AD_UNIT_ID: String get() = AdConfig.INTERSTITIAL_AD_UNIT_ID
 
     private val pendingWaiters = mutableListOf<(InterstitialAd?) -> Unit>()
 
     fun loadAd(context: Context) {
-        if (interstitialAd != null || isLoading) return
+        if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT || interstitialAd != null || isLoading) return
         
         val isPremium = try { BillingHelper.getInstance(context).isPremium.value } catch (e: Exception) { false }
         if (isPremium) return
@@ -65,6 +65,11 @@ object InterstitialAdHelper {
     }
 
     fun showAd(activity: Activity, onComplete: () -> Unit) {
+        if (AdStateManager.ADS_TEMPORARILY_COMMENTED_OUT) {
+            onComplete()
+            return
+        }
+
         val isPremium = try { BillingHelper.getInstance(activity).isPremium.value } catch (e: Exception) { false }
 
         if (isPremium || activity.isFinishing || activity.isDestroyed) {

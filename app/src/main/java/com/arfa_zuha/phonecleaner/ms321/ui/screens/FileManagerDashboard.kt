@@ -6,12 +6,16 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -74,14 +79,14 @@ fun FileManagerDashboard(
 
     val categories = remember(categorySizes) {
         listOf(
-            CategoryItem("Images", Icons.Default.Image, MediaType.IMAGE, Color(0xFF4CAF50), categorySizes[MediaType.IMAGE] ?: 0L),
-            CategoryItem("Videos", Icons.Default.VideoLibrary, MediaType.VIDEO, Color(0xFFF44336), categorySizes[MediaType.VIDEO] ?: 0L),
-            CategoryItem("Audio", Icons.Default.AudioFile, MediaType.AUDIO, Color(0xFF9C27B0), categorySizes[MediaType.AUDIO] ?: 0L),
-            CategoryItem("Documents", Icons.Default.Description, MediaType.DOCUMENT, Color(0xFF2196F3), categorySizes[MediaType.DOCUMENT] ?: 0L),
-            CategoryItem("APK", Icons.Default.Android, MediaType.APK, Color(0xFF8BC34A), categorySizes[MediaType.APK] ?: 0L),
-            CategoryItem("Downloads", Icons.Default.Download, MediaType.DOWNLOAD, Color(0xFFFF9800), categorySizes[MediaType.DOWNLOAD] ?: 0L),
-            CategoryItem("ZIP Files", Icons.Default.FolderZip, MediaType.ZIP, Color(0xFF795548), categorySizes[MediaType.ZIP] ?: 0L),
-            CategoryItem("Recent", Icons.Default.AccessTime, MediaType.RECENT, Color(0xFF607D8B), categorySizes[MediaType.RECENT] ?: 0L)
+            CategoryItem("Images", Icons.Default.Image, MediaType.IMAGE, Color(0xFF10B981), categorySizes[MediaType.IMAGE] ?: 0L),
+            CategoryItem("Videos", Icons.Default.VideoLibrary, MediaType.VIDEO, Color(0xFFEF4444), categorySizes[MediaType.VIDEO] ?: 0L),
+            CategoryItem("Audio", Icons.Default.AudioFile, MediaType.AUDIO, Color(0xFF8B5CF6), categorySizes[MediaType.AUDIO] ?: 0L),
+            CategoryItem("Documents", Icons.Default.Description, MediaType.DOCUMENT, Color(0xFF2563EB), categorySizes[MediaType.DOCUMENT] ?: 0L),
+            CategoryItem("APK", Icons.Default.Android, MediaType.APK, Color(0xFF10B981), categorySizes[MediaType.APK] ?: 0L),
+            CategoryItem("Downloads", Icons.Default.Download, MediaType.DOWNLOAD, Color(0xFFF59E0B), categorySizes[MediaType.DOWNLOAD] ?: 0L),
+            CategoryItem("ZIP Files", Icons.Default.FolderZip, MediaType.ZIP, Color(0xFFD97706), categorySizes[MediaType.ZIP] ?: 0L),
+            CategoryItem("Recent", Icons.Default.AccessTime, MediaType.RECENT, Color(0xFF64748B), categorySizes[MediaType.RECENT] ?: 0L)
         )
     }
 
@@ -90,34 +95,64 @@ fun FileManagerDashboard(
         else categories.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("File Manager", fontWeight = FontWeight.ExtraBold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
-        }
-    ) { padding ->
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color(0xFFFAFAFC) // Light modern clean surface matching Dashboard
+    ) {
         Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Consistent Header matching Top Menu Style
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    onClick = onNavigateBack,
+                    shape = CircleShape,
+                    color = Color(0xFFF1F5F9),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF334155),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "File Manager",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = "Categorized Storage & Media",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF64748B)
+                    )
+                }
+            }
+
             // Permission Banner if Storage Access Permission is Missing
             if (!hasPermission) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
+                Surface(
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                    color = Color(0xFFFEF3C7),
+                    border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
@@ -129,20 +164,20 @@ fun FileManagerDashboard(
                         Icon(
                             imageVector = Icons.Default.Security,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            tint = Color(0xFFB45309),
                             modifier = Modifier.size(24.dp)
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Grant Storage Permission",
-                                style = MaterialTheme.typography.titleSmall,
+                                fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                color = Color(0xFF78350F)
                             )
                             Text(
-                                text = "Allow All Files Access to display images, videos, documents & storage size.",
+                                text = "Allow All Files Access to view pictures, videos & exact file sizes.",
                                 fontSize = 10.5.sp,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f)
+                                color = Color(0xFF92400E)
                             )
                         }
                         Button(
@@ -169,88 +204,116 @@ fun FileManagerDashboard(
                                 }
                             },
                             shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Text("Grant", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Grant", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
             }
 
-            // Search Input Field
+            // Clean Search Field matching Modern Theme
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search file categories...", fontSize = 12.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", modifier = Modifier.size(18.dp)) },
+                placeholder = { Text("Search file categories...", fontSize = 12.sp, color = Color(0xFF94A3B8)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF64748B), modifier = Modifier.size(18.dp)) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF2563EB),
+                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                )
             )
 
+            // Section Subheader
             Text(
-                text = "Media Categories & Total Storage Size",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                text = "MEDIA & STORAGE CATEGORIES",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF94A3B8),
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp)
             )
 
+            // Categories Grid with Clean White Surfaces & Round Icons
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(filteredCategories) { cat ->
-                    ElevatedCard(
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val isPressed by interactionSource.collectIsPressedAsState()
+                    val scale by androidx.compose.animation.core.animateFloatAsState(
+                        targetValue = if (isPressed) 0.95f else 1.0f,
+                        animationSpec = androidx.compose.animation.core.tween(120),
+                        label = "cat_scale"
+                    )
+
+                    Surface(
+                        onClick = { onCategoryClick(cat.type) },
+                        interactionSource = interactionSource,
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        shadowElevation = 1.dp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onCategoryClick(cat.type) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            .scale(scale)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(14.dp),
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            // Circular icon container matching navigation style
                             Box(
                                 modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(cat.color.copy(alpha = 0.15f)),
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(cat.color.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = cat.icon,
                                     contentDescription = cat.name,
                                     tint = cat.color,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = cat.name,
-                                    fontSize = 13.sp,
+                                    fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = formatCategoryBytes(cat.totalBytes),
-                                    fontSize = 11.5.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = cat.color
                                 )
                             }
                         }
